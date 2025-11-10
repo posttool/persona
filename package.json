@@ -1,0 +1,33 @@
+{
+  "name": "aura-persona",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "webpack",
+    "start": "webpack --watch --progress",
+    "visualize-bundle": "webpack --analyze"
+  },
+  "devDependencies": {
+    "webpack": "^5.102.1",
+    "webpack-bundle-analyzer": "",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "@google/genai": "^1.28.0",
+    "firebase": "",
+    "firebase-admin": "",
+    "firebase-functions": "",
+    "javascript-time-ago": "",
+    "openai": "^6.8.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/posttool/aura-persona.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/posttool/aura-persona/issues"
+  },
+  "homepage": "https://github.com/posttool/aura-persona#readme"
+}
