@@ -66,7 +66,6 @@ async function callLLM(key, prompt, c = 0) {
     }
 }
 
-
 async function runStreaming(key, prompt) {
     const ai = new GoogleGenAI({ apiKey: key });
     const model = "gemini-2.5-flash";
@@ -88,8 +87,6 @@ async function runStreaming(key, prompt) {
     console.log(); // New line after the stream ends
 }
 
-
-
 async function getOpenAI(key, prompt) {
     const client = new OpenAI({ apiKey: key });
 
@@ -100,10 +97,6 @@ async function getOpenAI(key, prompt) {
 
     return response.output_text;
 }
-
-
-
-
 
 const {
     processTemplate,
@@ -126,19 +119,41 @@ exports.createPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
         return personaData;
     });
 
+
+function personaDataResponse1(doc) {
+    let data = doc.data();
+    return {
+        id: doc.id,
+        name: data.name,
+        occupation: data.occupation,
+        city: data.city,
+        age: data.age,
+        image: data.image,
+        apps: data.apps_and_services
+    };
+}
+
 exports.listPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
         let aa = [];
         let querySnapshot = await db.collection("persona").get();
         querySnapshot.forEach((doc) => {
-            let d = doc.data();
-            d.id = doc.id;
-            aa.push(d);
+            aa.push(personaDataResponse1(doc));
         });
         return aa;
     });
 
+exports.listPersona1 = functions.https.onRequest({ cors: true },
+    async (request, res) => {
+        let aa = [];
+        let querySnapshot = await db.collection("persona").get();
+        querySnapshot.forEach((doc) => {
+            aa.push(personaDataResponse1(doc));
+        });
 
+        res.set('Content-Type', 'application/json');
+        res.status(200).send(JSON.stringify(aa));
+    });
 
 exports.getPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
@@ -166,10 +181,10 @@ exports.createDayForPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY]
             d.id = doc.id;
             otherDays.push(d);
         });
-        let prompt = processTemplate(S2_DAY, { 
-            user: JSON.stringify(persona), 
+        let prompt = processTemplate(S2_DAY, {
+            user: JSON.stringify(persona),
             date: request.data.date.toString(),
-            otherDays: JSON.stringify(otherDays) 
+            otherDays: JSON.stringify(otherDays)
         });
         console.log(prompt)
         let dayData = await callLLM(GEMINI_API_KEY.value(), prompt);
@@ -197,6 +212,26 @@ exports.listDaysForPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] 
         return aa;
     });
 
+
+exports.listDaysForPersona1 = functions.https.onRequest({ cors: true },
+    async (request, res) => {
+        console.log(request)
+        let aa = [];
+        let querySnapshot = await db.collection("day")
+            .where("personaId", "==", request.query.id)
+            .orderBy("date")
+            .get();
+        querySnapshot.forEach((doc) => {
+            let data = doc.data();
+            aa.push({
+                id: doc.id,
+                date: data.date
+            });
+        });
+        res.set('Content-Type', 'application/json');
+        res.status(200).send(JSON.stringify(aa));
+    });
+
 exports.listObservations = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
         let aa = [];
@@ -212,6 +247,25 @@ exports.listObservations = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
             aa.push(d);
         });
         return aa;
+    });
+
+
+exports.listObservations1 = functions.https.onRequest({ cors: true },
+    async (request, res) => {
+        let aa = [];
+        let querySnapshot = await db.collection("observations")
+            .where("personaId", "==", request.query.id)
+            .where("date", "==", request.query.date)
+            .orderBy("time")
+            .get();
+        querySnapshot.forEach((doc) => {
+            let d = doc.data();
+            d.id = doc.id;
+            delete doc.personaId;
+            aa.push(d);
+        });
+        res.set('Content-Type', 'application/json');
+        res.status(200).send(JSON.stringify(aa));
     });
 
 async function generateEventsForDay(persona, day, step = 0) {
@@ -253,7 +307,7 @@ exports.makeASpace1 = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
             delete d.personaId;
             delete d.date;
             if (x >= request.data.startIdx && x <= request.data.endIdx)
-                 aa += JSON.stringify(d)+"\n";
+                aa += JSON.stringify(d) + "\n";
             x++;
         });
         let prompt = processTemplate(S42_ORGANIZE_AND_TRACK, {

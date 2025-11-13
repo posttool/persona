@@ -80,6 +80,7 @@ People who are sending message often do not know what I am doing or where I am.
 The events should make sense as a sequence or sequences performed by the user at this event.
 Create valid JSON output based on the following example:
 [
+{time: "06:37:23", device: 'phone', type: 'location', data: 'home'},
 {time: "06:32:13", device: 'watch', type: 'notification', senderApp: 'LocalTube', data: 'train late'},
 {time: "06:37:23", device: 'phone', type: 'wake', data: 'biometric unlock'},
 {time: "06:37:45", device: 'phone', type: 'touch surface', data: ''},

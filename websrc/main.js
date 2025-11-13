@@ -4,7 +4,7 @@ import { initializeApp } from "firebase/app";
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from "firebase/functions";
 import { initNavigation } from "./firebasey.js";
 import {
-    PersonaListUI, PersonComponent, MomentsContainer, SpacesComponent,
+    PersonaListUI, PersonComponent, MomentsContainer,
     TextComponent, RangeInput, Component, Button
 } from "./components.js";
 import { $ } from "./util.js";
@@ -27,7 +27,6 @@ if (window.location.hostname.includes("localhost")) {
     console.log("USING EMULATOR!")
     // connectFirestoreEmulator(getFirestore(), "localhost", 8080);
     connectFunctionsEmulator(functions, "localhost", 5001);
-    // LOG1 = true;
 }
 
 const createPersona = httpsCallable(functions, "createPersona");
@@ -36,7 +35,6 @@ const getPersona = httpsCallable(functions, "getPersona");
 const createDayForPersona = httpsCallable(functions, "createDayForPersona");
 const listDaysPersona = httpsCallable(functions, "listDaysForPersona");
 const listObservations = httpsCallable(functions, "listObservations");
-const makeASpace1 = httpsCallable(functions, "makeASpace1");
 
 console.log(window.location.pathname);
 const urlParams = new URLSearchParams(window.location.search);
@@ -47,6 +45,11 @@ initNavigation(user => {
         switch (document.location.pathname) {
             case '/':
                 showHome();
+                break;
+            case '/add':
+                createPersona({}).then(results => {
+                    showHome();
+                });
                 break;
             case '/persona.html':
                 displayPersona(urlParams.get('id'));
@@ -61,15 +64,15 @@ initNavigation(user => {
 function showHome() {
     let root = new Component($("root"));
     let personaList = new PersonaListUI(root);
-    let addPersona = new Button(root, {}, { text: "Add" });
-    addPersona.addListener('click', e => {
-        addPersona.visible(false);
-        createPersona({}).then(results => {
-            if (LOG1) console.log(results);
-            addPersona.visible(true);
-            doList();
-        })
-    });
+    // let addPersona = new Button(root, {}, { text: "Add" });
+    // addPersona.addListener('click', e => {
+    //     addPersona.visible(false);
+    //     createPersona({}).then(results => {
+    //         if (LOG1) console.log(results);
+    //         addPersona.visible(true);
+    //         doList();
+    //     })
+    // });
     function doList() {
         listPersona().then(results => {
             if (LOG1) console.log(results)
@@ -87,8 +90,7 @@ function displayPersona(id) {
     let organizeBB = new Component(root, { class: "row-container" });
     organizeBB.visible(false);
     let startSlider = new RangeInput(organizeBB, { class: "" });
-    let amountSlider = new RangeInput(organizeBB, { class: ""}, 21);
-    let doOrg = new Button(organizeBB, {}, { text: "Organize" });
+    let amountSlider = new RangeInput(organizeBB, { class: "" }, 21);
     let dayC = new Component(root);
 
     let selectedDay = null;
@@ -103,20 +105,20 @@ function displayPersona(id) {
         if (LOG1) console.log(days)
         let maxDay = new Date();
         days.data.forEach(day => {
-            console.log(day.date, new Date(day.date))
+            // console.log(day.date, new Date(day.date))
             maxDay = Math.max(new Date(day.date), maxDay);
-            let t = new Button(dayBB, {class: "tab-button"}, { text: day.date });
+            let t = new Button(dayBB, { class: "tab-button" }, { text: day.date });
             t.addListener('click', e => {
                 if (LOG1) console.log(day);
                 selectedDay = day;
-                dayBB.children.forEach(b=>{
-                    if (b==t) 
+                dayBB.children.forEach(b => {
+                    if (b == t)
                         b.el.classList.add("selected");
                     else
                         b.el.classList.remove("selected");
                 })
                 listObservations({ id: id, date: day.date }).then(obs => {
-                    if (LOG1) console.log(obs);
+                    console.log(obs); //if (LOG1) 
                     organizeBB.visible(true);
                     obsMap = {};
                     obs.data.forEach(o => {
@@ -132,7 +134,7 @@ function displayPersona(id) {
         });
         maxDay = new Date(maxDay);
         maxDay.setDate(maxDay.getDate() + 1);
-        let addDay = new Button(dayBB, {class: "add-button"}, { text: "Add Day " + (maxDay.getMonth() + 1) + "/" + maxDay.getDate() +"/"+ + maxDay.getFullYear() });
+        let addDay = new Button(dayBB, { class: "add-button" }, { text: "Add Day " + (maxDay.getMonth() + 1) + "/" + maxDay.getDate() + "/" + + maxDay.getFullYear() });
         addDay.addListener('click', e => {
             addDay.visible(false);
             createDayForPersona({ date: maxDay, id: id }).then(results => {
@@ -146,19 +148,7 @@ function displayPersona(id) {
         amountSlider.addListener('change', v => {
             observationView.show(startSlider.data, amountSlider.data);
         })
-        doOrg.addListener('click', e => {
-            if (LOG1) console.log(selectedDay.date, startSlider.data, amountSlider.data)
-            if (selectedDay)
-                makeSpaceFromRange(selectedDay.date, startSlider.data, startSlider.data + amountSlider.data);
-        });
+
     });
-    function makeSpaceFromRange(date, start, end) {
-       doOrg.visible(false);
-        makeASpace1({ id: id, date: date, startIdx: start, endIdx: end }).then(spaces => {
-            console.log(spaces);
-            let sc = new SpacesComponent($("spaces"), spaces.data, obsMap);
-            doOrg.visible(true);
-        });
-    }
 
 }

@@ -61,7 +61,7 @@ export function initNavigation(authStateCallback) {
 }
 
 async function authStateObserver(user) {
-  console.log(user)
+  // console.log(user)
   clientLogin.data = user;
   _authStateCallback(user);
 }

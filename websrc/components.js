@@ -106,19 +106,6 @@ export class Component {
 
 }
 
-// example use
-/*
-    let topicCard = new ExploreTopicCard(carousel);
-    let heading = new TopicHeading(topicCard);
-    let headline = new Headline(topicCard);
-    let video = new VideoPlayer(topicCard);
-    let bodyText = new BodyText(topicCard);
-    topicCard.data = topic.meta;
-    heading.data = { text: topic.overview.heading };
-    headline.data = { text: topic.overview.headline };
-*/
-
-////////////
 
 export class TextComponent extends Component {
     constructor(parent, options, data) {
@@ -236,180 +223,6 @@ function secondsToTimeString(totalSeconds) {
     return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
 }
 
-export class SpacesComponent extends Component {
-    constructor(parent, spaces, observations) {
-        super(parent, { class: 'spaces' });
-        this.time = new TextComponent(this, { class: "time" }, { text: "00:00:00" });
-        let spacesComponent = new Component(this);
-        let spaceComponent = new Component(this);
-        let maxDate = 0;
-        spaces.forEach(space => {
-            let s = new SpaceComponent(spacesComponent, space);
-            s.title.click(e => {
-                spacesComponent.visible(false);
-                spaceComponent.clear();
-                spaceComponent.visible(true);
-                let s1 = new SpaceComponentExtended(spaceComponent, space, observations);
-                s1.title.click(e => {
-                    spacesComponent.visible(true);
-                    spaceComponent.visible(false);
-                })
-            })
-        });
-    }
-}
-
-class SpaceComponent extends Component {
-    constructor(parent, space) {
-        super(parent, { class: 'space-card' });
-        this.lastUpdate = -1;
-        this.title = new TextComponent(this, { class: "big-text" }, { text: space.name });
-        new TextComponent(this, { class: "medium-text" }, { text: space.subject });
-        new TextComponent(this, {}, { text: space.tracking.reason });
-        if (space.tracking.expires)
-            new TextComponent(this, {class:"pill"}, { text: space.tracking.expires });
-        if (space.tracking.actions)
-            new ButtonRow(this, space.tracking.actions);
-        }
-}
-
-
-
-class SpaceComponentExtended extends Component {
-    constructor(parent, space, observationMap) {
-        super(parent, { class: 'space-card' });
-        this.title = new TextComponent(this, { class: "big-text" }, { text: space.name });
-        new TextComponent(this, { class: "medium-text" }, { text: space.subject });
-        let c = new Component(this, { class: 'row-container' });
-        new TextComponent(c, {}, { text: space.tracking.reason });
-        new TextComponent(c, {}, { text: space.tracking.expires });
-        space.relatedObservations.forEach(obsId => {
-            let task = observationMap[obsId];
-            if (task != null) {
-                let taskContainer = new Component(this);
-                new TextComponent(taskContainer, { class: 'small-text' }, { text: getObservationString(task) });
-                new TextComponent(taskContainer, { class: 'small-text' }, { text: task.data });
-            }
-        })
-
-        // }
-    }
-}
-
-
-export class SpacesComponentXXX extends Component {
-    constructor(parent, spaces) {
-        super(parent, { class: 'spaces-card' });
-        this.time = new TextComponent(this, { class: "time" }, { text: "00:00:00" });
-        let spacesComponent = new Component(this);
-        let spaceComponent = new Component(this);
-        let maxDate = 0;
-        for (const [spaceName, taskMap] of spaces.map) {
-            let s = new SpaceComponent(spacesComponent, spaceName, taskMap);
-            maxDate = Math.max(maxDate, s.lastUpdate);
-            this.time.data = { text: secondsToTimeString(maxDate) };
-            s.addListener('select', e => {
-                spacesComponent.visible(false);
-                spaceComponent.clear();
-                spaceComponent.visible(true);
-                let s1 = new CategoryComponent(spaceComponent, e);
-                s1.title.click(e => {
-                    spacesComponent.visible(true);
-                    spaceComponent.visible(false);
-                })
-            })
-        }
-    }
-}
-
-class SpaceComponentXXX extends Component {
-    constructor(parent, spaceName, taskMap) {
-        super(parent, { class: 'space-card' });
-        this.lastUpdate = -1;
-        new TextComponent(this, { class: "big-text" }, { text: spaceName });
-        let c = new Component(this, { class: 'row-container' });
-        // for (const [categoryName, taskMap] of categoryMap) {
-        let maxDate = new Date();
-        for (const [taskName, taskList] of taskMap) {
-            maxDate = Math.max(maxDate, timeStringToSeconds(taskList[taskList.length - 1].time));
-            let deadlines = {};
-            taskList.forEach(task => {
-                if (task.expires) {
-                    deadlines[task.expires] = task.isPriority;
-                }
-            })
-            let c1 = new CategoryPill(c, taskName, deadlines);
-            let that = this;
-            c1.click(e => {
-                that.emit('select', { name: taskName, tasks: taskList })
-            })
-        }
-        this.lastUpdate = Math.max(this.lastUpdate, maxDate);
-        // }
-    }
-}
-
-class CategoryPill extends Component {
-    constructor(parent, name, pills) {
-        super(parent, { class: 'pill' });
-        let c1 = new TextComponent(this, {}, { text: name });
-        for (let p in pills) {
-            let c2 = new TextComponent(this,
-                { class: 'small-pill ' + (pills[p] ? "priority" : "") },
-                { text: p });
-        }
-    }
-}
-
-
-class CategoryComponentXXX extends Component {
-    constructor(parent, data) {
-        super(parent, { class: 'space-card' });
-        this.title = new TextComponent(this, { class: "big-text" }, { text: data.name });
-        let timeMap = {};
-        // for (const [taskName, taskList] of data.tasks) {
-        //     console.log(taskName, taskList);
-        //     new TextComponent(this, { class: 'medium-text' }, { text: taskName });
-        data.tasks.forEach(task => {
-            let taskContainer = new Component(this);
-            timeMap[task.time] = taskContainer;
-            new TextComponent(taskContainer, { class: 'small-text' }, { text: getObservationString(task) });
-            new TextComponent(taskContainer, { class: 'small-text' }, { text: task.data });
-            if (task.expires) {
-                new TextComponent(taskContainer, { class: 'small-text' }, { text: "**" + task.isPriority });
-                new TextComponent(taskContainer, { class: 'small-text' }, { text: "**" + task.expires });
-            }
-            taskContainer.click(c => {
-                console.log(task)
-                for (let p in timeMap) {
-                    let showRelated = task.relatedObservations.indexOf(p) != -1
-                    timeMap[p].el.style.opacity = showRelated ? 1 : .3;
-                    timeMap[p].el.style.color = "black";
-                }
-                taskContainer.children[0].el.color = "rgba(245, 78, 78, 1)";
-            })
-            new ButtonRow(this, task.actions);
-        })
-
-        // }
-    }
-}
-
-class ButtonRow extends Component {
-    constructor(parent, actions) {
-        super(parent, { class: 'row-container' });
-        if (actions) {
-            actions.forEach(a => {
-                let t = new TextComponent(this,  { class: 'small-pill' });
-                t.el.innerHTML =  a.app + "<br>" + a.intent;
-                t.click(e => {
-                    console.log(a);
-                })
-            });
-        }
-    }
-
-}
 
 class DayComponent extends Component {
     constructor(parent, data) {
@@ -506,7 +319,8 @@ class MomentComponent extends Component {
             // this.deviceIcon.innerText = this._data.device
             // this.typeIcon.innerText = this._data.type;
             // this.appIcon.innerText = (this._data.senderApp ? this._data.senderApp : "");
-            this.textInfo.classList.add(this._data.type.replaceAll(" ", "-"));
+           if (this._data.type)
+                this.textInfo.classList.add(this._data.type.replaceAll(" ", "-"));
             this.textInfo.innerText =
                 (this._data.senderApp ? this._data.senderApp + " / " : "") +
                 (this._data.sender ? this.data.sender + " : " : "") +
@@ -614,47 +428,6 @@ export class RangeInput extends Component {
     }
 }
 
-class LocationInput extends Component {
-    constructor(parent) {
-        super(parent);
-        this.input = new Input(this);
-        this.input.addListener("keyup", this.getLocations.bind(this));
-        this.choices = new Component(this);
-        this.choices.el.style.position = "absolute";
-        this.choices.addListener("value", this._fireChange.bind(this));
-        this.timeout = -1;
-    }
-    getLocations() {
-        let input = this.input;
-        let output = this.choices;
-        clearTimeout(this.timeout);
-        this.timeout = setTimeout(e => {
-            output.clear();
-            if (input.data.length < 3)
-                return;
-            dofetch(GEO_LOC + input.data, {}, function (r) {
-                // console.log(r.results.length);
-                r.results.forEach(place => {
-                    console.log(place)
-                    let t = new TextComponent(output, { class: "location" }, { text: place.formatted_address });
-                    t.click(e => {
-                        output.clear();
-                        input.data = place.formatted_address;
-                        output.data = {
-                            formatted_address: place.formatted_address,
-                            location: place.geometry.location
-                        };
-                        output.emit("value", output.data);
-                    })
-                });
-            });
-        }, 500);
-    }
-    _fireChange(e, d) {
-        this.emit("submit", this.choices.data);
-    }
-}
-
 class Input extends Component {
     constructor(parent) {
         super(parent, { el: "input" });
@@ -681,10 +454,15 @@ class Select extends Component {
     constructor(parent, options) {
         super(parent, { el: "select" });
         this.options = options;
-        for (let i = 0; i < options.length; i++) {
+        for (let i=0; i<options.length; i++) {
             // let o = $$({el: "option", text: options[i]});
             // this.el.addChild(o);
-            const newOption = new Option(options[i]);//, 'optionValue');
+            let o = options[i];
+            let newOption = null;
+            if (o.name && o.value)
+                newOption = new Option(o.name, o.value);
+            else
+                newOption = new Option(o);
             this.el.add(newOption);
         }
         this.el.selectedIndex = -1;
@@ -695,8 +473,10 @@ class Select extends Component {
             this.el.selectedIndex = this._data;
         }
     }
-    _fireChange(e) {
+    _fireChange(e){
         this._data = this.options[this.el.selectedIndex];
+        if (this._data.value)
+            this._data = this._data.value;
         this.emit("value", this._data);
     }
 }

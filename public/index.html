@@ -20,8 +20,6 @@
       --color3: #aff2be;
       --color4: #c8ff7d;
       --color5: #5b8620;
-
-      /* Global variable */
       --font-stack: "Mulish", sans-serif;
 
     }
@@ -30,17 +28,26 @@
       font-family: var(--font-stack);
     }
 
-    h1 {font-size: 33px;}
-    h2 {font-size: 33px;}
+    h1 {
+      font-size: 33px;
+    }
+
+    h2 {
+      font-size: 33px;
+    }
+
     a:link {
       color: var(--color3);
     }
+
     a:visited {
       color: var(--color3);
     }
+
     a:hover {
       color: var(--color4);
     }
+
     a:active {
       color: var(--color2);
     }
@@ -71,177 +78,150 @@
     .audio {
       color: #0095ff;
       font-family: Gelasio;
-       font-style: italic;
+      font-style: italic;
     }
+
     .command {
       color: #004cff;
       font-family: Gelasio;
       font-style: italic;
     }
+
     .screen::before {
       font-family: "Material Symbols Outlined";
-      content: "screenshot_monitor"; 
-      margin-right: 5px; 
+      content: "screenshot_monitor";
+      margin-right: 5px;
       vertical-align: middle;
     }
+
     .notification::before {
       font-family: "Material Symbols Outlined";
-      content: "chat_bubble"; 
-      margin-right: 5px; 
-      vertical-align: middle; 
+      content: "chat_bubble";
+      margin-right: 5px;
+      vertical-align: middle;
     }
+
     .touch-surface::before {
       font-family: "Material Symbols Outlined";
       content: "touch_app";
       margin-right: 5px;
-      vertical-align: middle; 
-    }
-
-   
-    .spaces {
-        width: 340px;
-        height: 730px;
-        position: fixed;
-        right: 20px;
-        top: 20px;
-        border-radius: 35px;
-        padding: 20px;
-        background: linear-gradient(to bottom, var(--color1), var(--color1a));
-        overflow: scroll;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
-
-    }
-
-   
-    #network-status {
-        width: 100px;
-        position: fixed;
-        right: 10px;
-        top: 0;
-    }
-
-    .space-card {
-        border-radius: 25px;
-        background-color: var(--color2);
-        padding: 10px;
-        margin: 0 0 10px 0;
-        font-family: "Mulish", sans-serif;
-        display: flex;
-        flex-direction: column;
-        row-gap: 5px;
+      vertical-align: middle;
     }
 
     .padded {
-        padding: 10px 0 10px 0;
+      padding: 10px 0 10px 0;
     }
-
- 
 
     button {
-        border-radius: 17px;
-        border: 1px solid #333;
-        padding: 5px 10px 5px 10px;
-        background-color: inherit;
+      border-radius: 17px;
+      border: 1px solid #333;
+      padding: 5px 10px 5px 10px;
+      background-color: inherit;
     }
+
     .tab-button {
       border-bottom: 0;
       border-bottom-left-radius: 0 0;
       border-bottom-right-radius: 0 0;
     }
+
     .tab-button.selected {
       font-weight: bold;
     }
+
     .add-button {
       border: 0;
       background-color: inherit;
     }
+
     .add-button::before {
       font-family: "Material Symbols Outlined";
       content: "add_circle";
       margin-right: 5px;
-      vertical-align: middle; 
+      vertical-align: middle;
     }
 
     .time {
-        font-family: "Mulish", sans-serif;
-        padding: 6px 0 10px 13px;
+      font-family: "Mulish", sans-serif;
+      padding: 6px 0 10px 13px;
     }
 
     .row-container {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        column-gap: 10px;
-        row-gap: 5px;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      column-gap: 10px;
+      row-gap: 5px;
     }
 
     .centered {
       align-items: center;
     }
+
     .flexend {
-            justify-content: flex-end;
+      justify-content: flex-end;
     }
 
     .fade-out {
-        opacity: 0;
-        transition: opacity 2.5s ease-out;
-        /* Adjust duration and timing function as needed */
+      opacity: 0;
+      transition: opacity 2.5s ease-out;
+      /* Adjust duration and timing function as needed */
     }
 
     .huge-text {
-        font-size: 32px;
-        font-weight: bold;
+      font-size: 32px;
+      font-weight: bold;
     }
 
     .big-text {
-        font-size: 22px;
-        font-weight: bold;
-        padding: 4px 0 10px 0;
+      font-size: 22px;
+      font-weight: bold;
+      padding: 4px 0 10px 0;
     }
 
     .medium-text {
-        font-size: 18px;
-        padding: 12px 0 2px 0;
+      font-size: 18px;
+      padding: 12px 0 2px 0;
     }
 
     .small-text {
-        font-size: 13px;
+      font-size: 13px;
     }
 
     .top-aligned-cell {
-        vertical-align: top;
+      vertical-align: top;
     }
 
     .pill {
-        background-color: var(--color4);
-        border-radius: 28px;
-        padding: 6px;
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
+      background-color: var(--color4);
+      border-radius: 28px;
+      padding: 6px;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
     }
 
     .small-pill {
-        background-color: white;
-        border-radius: 11px;
-        padding: 2px 15px 2px 5px;
-        font-size: 11px;
+      background-color: white;
+      border-radius: 11px;
+      padding: 2px 15px 2px 5px;
+      font-size: 11px;
     }
 
     .priority {
-        background-color: rgb(5, 209, 250);
+      background-color: rgb(5, 209, 250);
     }
 
     .rounded-img {
-      width: 35px; height: 35px;
+      width: 35px;
+      height: 35px;
       border-radius: 18px;
     }
 
     .flexend {
-        margin-left: auto;
+      margin-left: auto;
 
     }
-
   </style>
 </head>
 
@@ -254,10 +234,10 @@
       <div id="navigation-login"></div>
     </div>
   </div>
-  
+
   <div id="root"></div>
   <div id="spaces"></div>
-  
+
   <script src="src/_main.js"></script>
 
 
