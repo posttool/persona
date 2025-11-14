@@ -30,6 +30,7 @@ if (window.location.hostname.includes("localhost")) {
 }
 
 const createPersona = httpsCallable(functions, "createPersona");
+const createPersona2 = httpsCallable(functions, "createPersona2");
 const listPersona = httpsCallable(functions, "listPersona");
 const getPersona = httpsCallable(functions, "getPersona");
 const createDayForPersona = httpsCallable(functions, "createDayForPersona");
@@ -48,6 +49,16 @@ initNavigation(user => {
                 break;
             case '/add':
                 createPersona({}).then(results => {
+                    showHome();
+                });
+                break;
+            case '/add2':
+                createPersona2({
+                    location: urlParams.get('location'),
+                    age: urlParams.get('age'),
+                    gender: urlParams.get('gender'),
+                    extra: urlParams.get('extra')
+                }).then(results => {
                     showHome();
                 });
                 break;

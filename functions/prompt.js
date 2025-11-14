@@ -473,7 +473,7 @@ Example output structure:
 
 Make sure the final output is valid JSON.`;
 }
-
+exports.personaPrompt = personaPrompt;
 
 function getCountries() {
     const countries = [

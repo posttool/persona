@@ -101,6 +101,7 @@ async function getOpenAI(key, prompt) {
 const {
     processTemplate,
     randomPersonaPrompt,
+    personaPrompt,
     personaImagePrompt,
     S2_DAY,
     S3_AMBIENT_OBSERVATIONS,
@@ -110,6 +111,18 @@ const {
 exports.createPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
         let p = randomPersonaPrompt();
+        let gemResults = await getGemini(GEMINI_API_KEY.value(), p);
+        let personaData = parseJSON(gemResults);
+        // personaData.date = Firestore.FieldValue.serverTimestamp();
+        let newPersona = await db.collection('persona').add(personaData);
+        await createImageForAgent(newPersona.id);
+        personaData.id = newPersona.id;
+        return personaData;
+    });
+
+exports.createPersona2 = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
+    async (request, context) => {
+        let p = personaPrompt(request.data.location, request.data.age, request.data.gender, request.data.extra);
         let gemResults = await getGemini(GEMINI_API_KEY.value(), p);
         let personaData = parseJSON(gemResults);
         // personaData.date = Firestore.FieldValue.serverTimestamp();

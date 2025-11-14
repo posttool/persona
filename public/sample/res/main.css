@@ -1,0 +1,337 @@
+.bright {
+  --color1: #155263;
+  --color2: #ff6f3c;
+  --color3: #ff9a3c;
+  --color4: #ffc93c;
+}
+
+.muted-color {
+  --color1: #f0ece2;
+  --color2: #dfd3c3;
+  --color3: #c7b198;
+  --color4: #596e79;
+}
+
+.first-color {
+  --color1: #45171d;
+  --color2: #e84a5f;
+  --color3: #ff847c;
+  --color4: #fecea8;
+}
+
+:root {
+  --color1: #badac5;
+  --color1a: #bbddd3;
+  --color2: #e9ffcd;
+  --color3: #aff2be;
+  --color4: #c8ff7d;
+
+  --font-stack: "Google Sans Flex", sans-serif;
+
+}
+
+* {
+  font-family: var(--font-stack);
+  box-sizing: border-box;
+
+  -webkit-font-smoothing: antialiased;
+  /* For WebKit browsers (Chrome, Safari) */
+  -moz-osx-font-smoothing: grayscale;
+  /* For Firefox on macOS */
+  font-smoothing: antialiased;
+  /* Standard property, but less widely supported */
+}
+
+
+
+#controls {
+  width: 380px;
+  position: fixed;
+  right: 20px;
+  top: 20px;
+  padding: 20px;
+
+}
+
+#network-status {
+  width: 100px;
+  position: fixed;
+  right: 10px;
+  top: 0;
+}
+
+
+
+#network-status {
+  width: 100px;
+  position: fixed;
+  right: 10px;
+  top: 0;
+}
+
+
+.padded {
+  padding: 10px 0 10px 0;
+}
+
+.rounded {
+  border-radius: 18px;
+}
+
+input,
+select,
+button {
+  padding: 5px;
+}
+
+button {
+  background-color: var(--primary-color);
+  border-radius: 17px;
+  border: 1px solid #333;
+}
+
+.time {
+  font-family: "Mulish", sans-serif;
+  padding: 6px 0 10px 13px;
+}
+
+.row-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 5px 5px;
+}
+
+.huge-text {
+  font-size: 32px;
+  font-weight: bold;
+}
+
+.big-text {
+  font-size: 22px;
+  font-weight: bold;
+  padding: 4px 0 10px 0;
+}
+
+.medium-text {
+  font-size: 18px;
+}
+
+.small-text {
+  font-size: 12px;
+}
+
+.top-aligned-cell {
+  vertical-align: top;
+}
+
+
+
+.small-pill {
+  background-color: rgb(118, 232, 255);
+  border-radius: 8px;
+  padding: 2px 5px 2px 5px;
+  font-size: 11px;
+}
+
+.priority {
+  background-color: rgb(5, 209, 250);
+}
+
+
+.width-small {
+  width: 50px;
+}
+
+
+.tab-button {
+  border: 0;
+  padding: 0;
+  font-size: 11px;
+}
+
+.tab-button.selected {
+  font-weight: bold;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+.day-tabs {
+  padding: 10px 0 0 0;
+  max-width: 120px;
+}
+
+.obs-slider {
+  position: relative;
+  width: 100%;
+  height: 15px;
+  margin: 10px 0 10px 30px;
+}
+
+.obs-slider .bg {
+  position: absolute;
+  height: 2px;
+  width: 100%;
+  top: 6px;
+  background-color: #000;
+}
+
+.obs-slider .min {
+  position: absolute;
+  width: 8px;
+  height: 100%;
+  background: #000000;
+}
+
+.obs-slider .max {
+  position: absolute;
+  width: 8px;
+  height: 100%;
+  background: #000000;
+}
+
+.obs-slider .btwn {
+  position: absolute;
+  width: 5px;
+  height: 100%;
+  /* background: var(--color1); */
+  background: repeating-linear-gradient(45deg,
+      #fff,
+      /* White, starting at 0px */
+      #fff 2px,
+      /* White, ending at 1px */
+      #888 2px,
+      /* Black, starting at 1px */
+      #888 4px
+      /* Black, ending at 2px (the pattern size) */
+    )
+}
+
+.fixed-height {
+  max-height: 400px;
+  overflow: auto;
+  margin: 10px 0 10px 30px;
+}
+
+.audio {
+  color: #0095ff;
+  font-family: Gelasio;
+  font-style: italic;
+}
+
+.command {
+  color: #004cff;
+  font-family: Gelasio;
+  font-style: italic;
+}
+
+.screen::before {
+  font-family: "Material Symbols Outlined";
+  content: "screenshot_monitor";
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+.notification::before {
+  font-family: "Material Symbols Outlined";
+  content: "chat_bubble";
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+.touch-surface::before {
+  font-family: "Material Symbols Outlined";
+  content: "touch_app";
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+/* loaders and spinners */
+
+.loader {
+  width: 120px;
+  height: 10px;
+  background:
+    linear-gradient(90deg, #0001 33%, #0005 50%, #0001 66%) #f2f2f2;
+  background-size: 300% 100%;
+  animation: l1 1s infinite linear;
+}
+
+@keyframes l1 {
+  0% {
+    background-position: right
+  }
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #FFF;
+  border-bottom-color: #aec1a7;
+  border-radius: 50%;
+  display: inline-block;
+  box-sizing: border-box;
+  animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* HTML: <div class="loader"></div> */
+.spinner2 {
+  height: 30px;
+  aspect-ratio: 6;
+  --c: #0000 64%, #000 66% 98%, #0000 101%;
+  background:
+    radial-gradient(35% 146% at 50% 159%, var(--c)) 0 0,
+    radial-gradient(35% 146% at 50% -59%, var(--c)) 25% 100%;
+  background-size: calc(100%/3) 50%;
+  background-repeat: repeat-x;
+  animation: l1 1s infinite linear;
+}
+
+@keyframes l1 {
+  to {
+    background-position: 50% 0, 75% 100%
+  }
+}
+
+/* HTML: <div class="loader"></div> */
+.heart-loader {
+  width: 20px;
+  aspect-ratio: 1;
+  color: #222121;
+  background:
+    radial-gradient(circle at 60% 65%, currentColor 62%, #0000 65%) top left,
+    radial-gradient(circle at 40% 65%, currentColor 62%, #0000 65%) top right,
+    linear-gradient(to bottom left, currentColor 42%, #0000 43%) bottom left,
+    linear-gradient(to bottom right, currentColor 42%, #0000 43%) bottom right;
+  background-size: 50% 50%;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+.heart-loader:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: inherit;
+  opacity: 0.4;
+  animation: l3 1s infinite;
+}
+
+@keyframes l3 {
+  to {
+    transform: scale(2);
+    opacity: 0
+  }
+}

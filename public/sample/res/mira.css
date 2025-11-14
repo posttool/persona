@@ -1,0 +1,68 @@
+#phone {
+    background-image: url("google_wallpapers_2025_exploration_sh20003_v03-26_00000\ 1.png");
+    width: 412px;
+    height: 919px;
+     border-radius: 68px;
+
+}
+#phone .header {
+    height: 96px;
+}
+#phone .content {
+    margin: 0 10px 0 10px;
+}
+
+#spaces .time1 {
+    color: rgba(69, 83, 80, 0.50);
+    leading-trim: both;
+    text-edge: cap;
+    font-family: "Google Sans Flex";
+    font-size: 149.849px;
+    font-style: normal;
+    font-weight: 550;
+    line-height: 90%;
+    /* 134.864px */
+    letter-spacing: -1.703px;
+    font-variation-settings: 'wdth' 25,  'ROND' 75;
+    margin-left: 30px;
+}
+
+
+#spaces .time2 {
+    color: #455350;
+    leading-trim: both;
+    text-edge: cap;
+    font-family: "Google Sans Flex";
+    font-size: 149.849px;
+    font-style: normal;
+    font-weight: 550;
+    line-height: 90%;
+    font-variation-settings: 'wdth' 25,  'ROND' 75;
+    margin-left: 30px;
+}
+
+#spaces .space {
+    width: 100%;
+    padding: 32px 24px 24px 32px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 21px;
+    border-radius: 48px;
+    background: #DFF2EB;
+}
+
+.pill {
+  background: #C4E1FF;
+  border-radius: 28px;
+  height: 24px;
+  color: #475353;
+text-align: center;
+font-family: "Google Sans Flex";
+font-size: 12px;
+font-style: normal;
+font-weight: 700;
+line-height: 16px; /* 133.333% */
+letter-spacing: 0.03px;
+    font-variation-settings: '90' 25,  'ROND' 100;
+
+}
