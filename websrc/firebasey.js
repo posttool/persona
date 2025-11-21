@@ -25,7 +25,7 @@ class ClientLogin extends Component {
   draw() {
     super.draw();
     if (this.data) {
-      this.userPic.visible(true);
+      this.userPic.visible(false);
       this.userPic.data = { src: this.data.photoURL };
       // this.userName.visible(true);
       // this.userName.data = { text: this.data.displayName };

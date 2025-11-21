@@ -32,6 +32,7 @@
 
 * {
   font-family: var(--font-stack);
+    font-variation-settings:  'ROND' 50;
   box-sizing: border-box;
 
   -webkit-font-smoothing: antialiased;
@@ -45,7 +46,7 @@
 
 
 #controls {
-  width: 380px;
+  width: 580px;
   position: fixed;
   right: 20px;
   top: 20px;
@@ -71,7 +72,7 @@
 
 
 .padded {
-  padding: 10px 0 10px 0;
+  padding: 0 0 10px 0;
 }
 
 .rounded {
@@ -98,10 +99,18 @@ button {
 .row-container {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
+  vertical-align: middle;
   gap: 5px 5px;
 }
+.row-container-wrap {
+    flex-wrap: wrap;
+}
 
+.flexend {
+    justify-content: flex-end;
+     display: flex;
+  }
+    
 .huge-text {
   font-size: 32px;
   font-weight: bold;
@@ -113,9 +122,7 @@ button {
   padding: 4px 0 10px 0;
 }
 
-.medium-text {
-  font-size: 18px;
-}
+
 
 .small-text {
   font-size: 12px;

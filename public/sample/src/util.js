@@ -176,6 +176,7 @@ class Component {
         this.children = [];
         this.listeners = {};
         this.el = $$(options);
+        this.isVisible = false;
         this._data = null;
         if (parent != null) {
             if (parent instanceof Component) {
@@ -202,6 +203,7 @@ class Component {
         if (el == null)
             el = this.el;
         el.style.display = b ? '' : 'none';
+        this.isVisible = b;
     }
 
     addChild(component, idx) {

@@ -1,0 +1,279 @@
+
+    :root {
+      --color1: #badac5;
+      --color1a: #bbddd3;
+      --color2: #e9ffcd;
+      --color3: #aff2be;
+      --color4: #c8ff7d;
+      --color5: #5b8620;
+      --font-stack: "Mulish", sans-serif;
+
+    }
+
+    * {
+      font-family: var(--font-stack);
+      box-sizing: border-box;
+    }
+
+    h1 {
+      font-size: 33px;
+      margin: 18px 0 10px 0;
+    }
+
+    h2 {
+      font-size: 33px;
+       margin: 10px 0 6px 0;
+   }
+
+      h3 {
+      font-size: 18px;
+       margin: 24px 0 8px 0;
+   }
+
+    a:link {
+      color: var(--color3);
+    }
+
+    a:visited {
+      color: var(--color3);
+    }
+
+    a:hover {
+      color: var(--color4);
+    }
+
+    a:active {
+      color: var(--color2);
+    }
+
+    .rounded {
+      border-radius: 18px;
+    }
+
+    .row-container {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+
+    .small-text {
+      font-size: 12px;
+    }
+
+    .width-150 {
+      width: 150px;
+    }
+
+    table td,
+    table th {
+      vertical-align: top;
+    }
+
+    .audio, .ambient-audio, .ambient_audio {
+      color: #0095ff;
+      font-family: Gelasio;
+      font-style: italic;
+    }
+
+    .command {
+      color: #004cff;
+      font-family: Gelasio;
+      font-style: italic;
+    }
+
+    .screen::before {
+      font-family: "Material Symbols Outlined";
+      content: "screenshot_monitor";
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+
+    .location::before {
+      font-family: "Material Symbols Outlined";
+      content: "location_on";
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+    .location {
+        background-color: #e0f4ff;
+    }
+
+    .notification::before {
+      font-family: "Material Symbols Outlined";
+      content: "chat_bubble";
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+
+    .touch-surface::before {
+      font-family: "Material Symbols Outlined";
+      content: "touch_app";
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+
+    .padded {
+      padding: 10px 0 10px 0;
+    }
+
+    button {
+      border-radius: 17px;
+      border: 1px solid #333;
+      padding: 5px 10px 5px 10px;
+      background-color: inherit;
+    }
+
+    .tab-button {
+      border-bottom: 0;
+      border-bottom-left-radius: 0 0;
+      border-bottom-right-radius: 0 0;
+    }
+
+    .tab-button.selected {
+      font-weight: bold;
+    }
+
+    .add-button {
+      border: 0;
+      background-color: inherit;
+    }
+
+    .add-button::before {
+      font-family: "Material Symbols Outlined";
+      content: "add_circle";
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+
+    .time {
+      font-family: "Mulish", sans-serif;
+      padding: 6px 0 10px 13px;
+    }
+
+    .row-container {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      column-gap: 10px;
+      row-gap: 5px;
+    }
+
+    .centered {
+      align-items: center;
+    }
+
+    .flexend {
+      justify-content: flex-end;
+    }
+
+    .fade-out {
+      opacity: 0;
+      transition: opacity 2.5s ease-out;
+      /* Adjust duration and timing function as needed */
+    }
+
+    .huge-text {
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .big-text {
+      font-size: 22px;
+      font-weight: bold;
+      padding: 4px 0 10px 0;
+    }
+
+    .medium-text {
+      font-size: 18px;
+      padding: 12px 0 2px 0;
+    }
+
+    .small-text {
+      font-size: 13px;
+    }
+
+    .line-height-18 {
+              line-height: 18px;
+    }
+
+    .top-aligned-cell {
+      vertical-align: top;
+    }
+
+    .pill {
+      background-color: var(--color4);
+      border-radius: 28px;
+      padding: 6px;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+
+    .small-pill {
+      background-color: white;
+      border-radius: 11px;
+      padding: 2px 15px 2px 5px;
+      font-size: 11px;
+    }
+
+    .priority {
+      background-color: rgb(5, 209, 250);
+    }
+
+    .rounded-img {
+      width: 35px;
+      height: 35px;
+      border-radius: 18px;
+    }
+
+    .flexend {
+      margin-left: auto;
+
+    }
+
+
+.obs-slider {
+  position: relative;
+  width: 100%;
+  height: 15px;
+  margin: 10px 0 10px 0;
+}
+
+.obs-slider .bg {
+  position: absolute;
+  height: 2px;
+  width: 100%;
+  top: 6px;
+  background-color: #000;
+}
+
+.obs-slider .min {
+  position: absolute;
+  width: 8px;
+  height: 100%;
+  background: #000000;
+}
+
+.obs-slider .max {
+  position: absolute;
+  width: 8px;
+  height: 100%;
+  background: #000000;
+}
+
+.obs-slider .btwn {
+  position: absolute;
+  width: 5px;
+  height: 100%;
+  /* background: var(--color1); */
+  background: repeating-linear-gradient(45deg,
+      #fff,
+      /* White, starting at 0px */
+      #fff 2px,
+      /* White, ending at 1px */
+      #888 2px,
+      /* Black, starting at 1px */
+      #888 4px
+      /* Black, ending at 2px (the pattern size) */
+    )
+}

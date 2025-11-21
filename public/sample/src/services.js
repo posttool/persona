@@ -57,7 +57,12 @@ function callLLM(which, prompt, success, failure) {
     let callGemini = function () {
         dofetchGemini(prompt, r => {
             try {
-                let json = JSON.parse(r.substring(r.indexOf("```json") + 7, r.length - 4));
+                let json;
+                if (r.indexOf("```json") != -1) {
+                    json = JSON.parse(r.substring(r.indexOf("```json") + 7, r.length - 4));
+                } else {
+                    json = JSON.parse(r);
+                }
                 success(json);
             } catch (e) {
                 console.log(e);
@@ -128,7 +133,7 @@ GEMINI
 */
 
 const KKK = "AIzaSyCNEtXyUP3CVxPTfEjWjxsloNzaAq6EYig";
-const GEMINI_SERVICE = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + KKK;
+const GEMINI_SERVICE = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=" + KKK;
 
 
 function dofetchGemini(prompt, handler, failure) {

@@ -4,9 +4,12 @@ import { initializeApp } from "firebase/app";
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from "firebase/functions";
 import { initNavigation } from "./firebasey.js";
 import {
-    PersonaListUI, PersonComponent, MomentsContainer,
-    TextComponent, RangeInput, Component, Button
+    PersonaListUI, PersonComponent,
+    TextComponent, Component, Button
 } from "./components.js";
+import {
+    DayTabs, ObservationsView
+} from "./observations.js";
 import { $ } from "./util.js";
 
 const firebaseConfig = {
@@ -93,20 +96,18 @@ function showHome() {
     doList();
 }
 
-function displayPersona(id) {
-    let root = new Component($("root"));
-    let personaC = new Component(root);
-    new TextComponent(root, { class: "person", el: "h3" }, { text: "Days" });
-    let dayBB = new Component(root, { class: "row-container" });
-    let organizeBB = new Component(root, { class: "row-container" });
-    organizeBB.visible(false);
-    let startSlider = new RangeInput(organizeBB, { class: "" });
-    let amountSlider = new RangeInput(organizeBB, { class: "" }, 21);
-    let dayC = new Component(root);
+const SERVICE_URL = "https://us-central1-aura-persona.cloudfunctions.net/";
+    // const SERVICE_URL= "http://localhost:5001/aura-persona/us-central1/";
 
-    let selectedDay = null;
-    let observationView = null;
-    let obsMap = null;
+function displayPersona(id) {
+    let root = new Component($("root"), { class: "row-container" });
+    let personaC = new Component(root);
+    personaC.el.style.width = "410px";
+    let dayC = new Component(root);
+    dayC.el.style.maxWidth = "50%"
+    let h = new TextComponent(dayC, { class: "person", el: "h3" }, { text: "Days" });
+    let dayTabBar = new Component(dayC, { class: "row-container" });
+    let dayObsC = new Component(dayC);
 
     getPersona({ id: id }).then(persona => {
         if (LOG1) console.log(persona)
@@ -115,37 +116,27 @@ function displayPersona(id) {
     listDaysPersona({ id: id }).then(days => {
         if (LOG1) console.log(days)
         let maxDay = new Date();
+        let dtc = new DayTabs(dayTabBar, {}, days.data);
+        dtc.addListener('value', day => {
+            if (LOG1) console.log(day);
+            listObservations({ id: id, date: day.date }).then(obs => {
+                if (LOG1) console.log(obs); //
+                dayObsC.clear();
+                let o = new ObservationsView(dayObsC, obs.data);
+                o.jsonButton.addListener("click", e => {
+                    let url = SERVICE_URL + "listObservations1?id=" + id + "&date=" + day.date;
+                    window.open(url, '_blank');
+                });
+            });
+        });
+
         days.data.forEach(day => {
             // console.log(day.date, new Date(day.date))
             maxDay = Math.max(new Date(day.date), maxDay);
-            let t = new Button(dayBB, { class: "tab-button" }, { text: day.date });
-            t.addListener('click', e => {
-                if (LOG1) console.log(day);
-                selectedDay = day;
-                dayBB.children.forEach(b => {
-                    if (b == t)
-                        b.el.classList.add("selected");
-                    else
-                        b.el.classList.remove("selected");
-                })
-                listObservations({ id: id, date: day.date }).then(obs => {
-                    console.log(obs); //if (LOG1) 
-                    organizeBB.visible(true);
-                    obsMap = {};
-                    obs.data.forEach(o => {
-                        obsMap[o.id] = o;
-                    })
-                    dayC.clear();
-                    observationView = new MomentsContainer(dayC, obs.data);
-                    observationView.show(startSlider.data, amountSlider.data);
-                    startSlider.max = obs.data.length - 1;
-                });
-
-            });
         });
         maxDay = new Date(maxDay);
         maxDay.setDate(maxDay.getDate() + 1);
-        let addDay = new Button(dayBB, { class: "add-button" }, { text: "Add Day " + (maxDay.getMonth() + 1) + "/" + maxDay.getDate() + "/" + + maxDay.getFullYear() });
+        let addDay = new Button(dayTabBar, { class: "add-button" }, { text: "Add Day " + (maxDay.getMonth() + 1) + "/" + maxDay.getDate() + "/" + + maxDay.getFullYear() });
         addDay.addListener('click', e => {
             addDay.visible(false);
             createDayForPersona({ date: maxDay, id: id }).then(results => {
@@ -153,12 +144,6 @@ function displayPersona(id) {
                 addDay.visible(true);
             });
         });
-        startSlider.addListener('change', v => {
-            observationView.show(startSlider.data, amountSlider.data);
-        })
-        amountSlider.addListener('change', v => {
-            observationView.show(startSlider.data, amountSlider.data);
-        })
 
     });
 

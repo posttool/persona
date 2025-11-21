@@ -1,26 +1,36 @@
 <html>
+
 <head>
-<script src="src/util.js"></script>
-<script src="src/components.js"></script>
-<script src="src/services.js"></script>
-<script src="src/prompt.js"></script>
-<script src="src/spaces.js"></script>
 
-<link href="res/main.css" rel="stylesheet">
-<link href="res/mira.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gelasio:ital,wght@0,400..700;1,400..700&family=Mulish:ital,wght@0,200..1000;1,200..1000&display=swap">
-<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wdth,wght,ROND@6..144,25..100,1..1000,0..100&display=swap" rel="stylesheet">
+    <script src="src/util.js"></script>
+    <script src="src/components.js"></script>
+    <script src="src/services.js"></script>
+    <script src="src/prompt.js"></script>
+    <script src="src/spaces.js"></script>
+    <script src="src/drawbox.js"></script>
+    <script src="src/test.js"></script>
+
+    <link href="res/main.css" rel="stylesheet">
+    <link href="res/mira.css" rel="stylesheet">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Gelasio:ital,wght@0,400..700;1,400..700&family=Mulish:ital,wght@0,200..1000;1,200..1000&display=swap">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wdth,wght,ROND@6..144,25..100,1..1000,0..100&display=swap"
+        rel="stylesheet">
 </head>
 
 <body>
     <div id="phone">
-        <div class="header">x</div>
-        <div id="spaces" class="content" >
-            
+        <div class="header"> </div>
+        <div id="spaces" class="content">
+
         </div>
     </div>
 
@@ -29,21 +39,34 @@
 </body>
 
 <script>
-    const SERVICE_URL = "https://us-central1-aura-persona.cloudfunctions.net/";
-    // const SERVICE_URL= "http://localhost:5001/aura-persona/us-central1/";
+    var SERVICE_URL = "https://us-central1-aura-persona.cloudfunctions.net/";
+    if (window.location.href.indexOf("localhost") != -1) {
+        SERVICE_URL = "http://localhost:5001/aura-persona/us-central1/"
+    }
+
+    const colorThief = new ColorThief();
 
     let root = new Component($("spaces"));
     let controls = new Component($("controls"));
 
     document.fonts.ready.then(() => {
+        listPersona();
+        // dofetch(SERVICE_URL + "listObservations1?id=" + Jaime.id + "&date=" + Jaime.date, {}, obs => {
+        //     let obsMap = {};
+        //     obs.forEach(o => { obsMap[o.id] = o; })
+        //     new SpacesComponent($("spaces"), Jaime2, obsMap);
+        // });      
 
+    });
+
+    function listPersona() {
         dofetch(SERVICE_URL + "listPersona1", {}, personas => {
-            console.log(personas);
+            // console.log(personas);
             let personaList = new PersonaListUI(controls);
             personaList.data = personas;
             personaList.addListener('value', persona => {
                 dofetch(SERVICE_URL + "listDaysForPersona1?id=" + persona.id, {}, days => {
-                    console.log(days);
+                    // console.log(days);
                     personaList.visible(false);
                     let personaItem = new Component(controls);
                     let personaHeader = new PersonComponent(personaItem, persona);
@@ -54,29 +77,39 @@
                     });
                     let dayBB = new DayTabs(personaHeader.daysContainer, {}, days);
                     dayBB.addListener("value", day => {
-                        showDay(personaItem, persona,day);
+                        showDay(personaItem, persona, day);
                     });
-                    if (days.length!=0) {
+                    if (days.length != 0) {
                         showDay(personaItem, persona, days[0]);
                     }
 
                 });
             });
         });
-
-    });
+    }
 
     let lastObsView = null;
     function showDay(p, persona, day) {
+        console.log(persona)
+        if (persona.imageBG) {
+            let bg = new Image();
+            // bg.crossOrigin = 'anonymous';
+            bg.src = persona.imageBG;
+            bg.onload = ()=>{
+                $("phone").style.backgroundImage = "url(" + persona.imageBG + ")";
+                let x = colorThief.getPalette(bg);
+                console.log(x);
+            }
+        }
+        $("spaces").innerText = "";
         dofetch(SERVICE_URL + "listObservations1?id=" + persona.id + "&date=" + day.date, {}, obs => {
-            console.log(obs);
+            // console.log(obs);
             if (lastObsView) lastObsView.remove();
             let obsMap = {};
-            obs.forEach(o=>{ obsMap[o.id] = o;})
+            obs.forEach(o => { obsMap[o.id] = o; })
             let obsView = new ObservationsView(p, obs);
             lastObsView = obsView;
             obsView.gen.addListener("click", e => {
-                $("spaces").innerText = "";
                 obsView.gen.visible(false);
                 const shortObs = obs.slice(obsView.slider.data.min, obsView.slider.data.max);
                 let prompt = processTemplate(S42_ORGANIZE_AND_TRACK, {
@@ -86,11 +119,29 @@
                     date: day.date.toString()
                 });
                 callDefaultLLM(prompt, organized => {
-                    console.log(organized);
+                    // console.log(JSON.stringify(organized, null, "  "));
                     obsView.gen.visible(true);
-                    new SpacesComponent($("spaces"), organized, obsMap);
+                    console.log(organized)
+                    new SpacesComponent($("spaces"), organized.spaces, obsMap);
                 });
-            })
+            });
+            obsView.genImg3.addListener("click", e => {
+                dofetch(SERVICE_URL + "createBg1?id=" + persona.id, {}, img => {
+                    $("phone").style.backgroundImage = "url(" + img.url + ")";
+                });
+            });
+            // obsView.genImg1.addListener("click", e => {
+            //     dofetch(SERVICE_URL + "createImg1?id=" + persona.id +
+            //         "&date=" + day.date + "&dayPart=morning", {}, img => {
+            //             console.log(img)
+            //         });
+            // });
+            // obsView.genImg2.addListener("click", e => {
+            //     dofetch(SERVICE_URL + "createImg1?id=" + persona.id +
+            //         "&date=" + day.date + "&dayPart=afternoon", {}, img => {
+            //             console.log(img)
+            //         });
+            // });
         });
     }
 

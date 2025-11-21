@@ -7,7 +7,7 @@ const { defineSecret } = require('firebase-functions/params');
 
 // const { google } = require('googleapis');
 // const customsearch = google.customsearch('v1');
-const { GoogleGenAI, Modality } = require('@google/genai');
+const { GoogleGenAI, Modality, createUserContent, createPartFromUri } = require('@google/genai');
 // const OPENAI_API_KEY = defineSecret('OPENAI_API_KEY');
 // const googleSearchKey = defineSecret('GOOGLE_SEARCH_KEY');
 // const googleVertexKey = defineSecret('GOOGLE_VERTEX_AI_KEY');
@@ -133,6 +133,7 @@ exports.createPersona2 = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     });
 
 
+
 function personaDataResponse1(doc) {
     let data = doc.data();
     return {
@@ -142,6 +143,7 @@ function personaDataResponse1(doc) {
         city: data.city,
         age: data.age,
         image: data.image,
+        imageBG: data.imageBG,
         apps: data.apps_and_services
     };
 }
@@ -256,7 +258,7 @@ exports.listObservations = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
         querySnapshot.forEach((doc) => {
             let d = doc.data();
             d.id = doc.id;
-            delete doc.personaId;
+            delete d.personaId;
             aa.push(d);
         });
         return aa;
@@ -274,7 +276,7 @@ exports.listObservations1 = functions.https.onRequest({ cors: true },
         querySnapshot.forEach((doc) => {
             let d = doc.data();
             d.id = doc.id;
-            delete doc.personaId;
+            delete d.personaId;
             aa.push(d);
         });
         res.set('Content-Type', 'application/json');
@@ -338,39 +340,26 @@ exports.makeASpace1 = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
 
 
 
-// util
-async function ___igquery(key, prompt) {
+// image generation
+async function ___igquery(key, contents) {
     const AI = new GoogleGenAI({ apiKey: key });
     const response = await AI.models.generateContent({
         model: 'gemini-2.5-flash-image',
-        contents: prompt,
+        contents: contents,
         config: {
             responseModalities: [Modality.TEXT, Modality.IMAGE],
         },
     });
     for (const part of response.candidates[0].content.parts) {
-        // Based on the part type, either show the text or save the image
         if (part.text) {
             console.log(part.text);
         } else if (part.inlineData) {
             const imageData = part.inlineData.data;
             const buffer = Buffer.from(imageData, "base64");
-            // fs.writeFileSync("gemini-native-image.png", buffer);
-            // console.log("Image saved as gemini-native-image.png");
             return buffer;
         }
     }
 }
-
-
-
-// exports.testImage = functions
-//     .runWith({ secrets: [GEMINI_API_KEY] })
-//     .https.onCall(async (data, context) => {
-//         var prompt = data.prompt + ' ' + data.xtra;
-//         const e = await ___igquery(googleVertexKey.value(), prompt.trim());
-//         return e;
-//     });
 
 exports.updateImage = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
@@ -378,23 +367,154 @@ exports.updateImage = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     });
 
 async function createImageForAgent(id) {
-    const agentDoc = db.collection('persona').doc(id);
-    const agentSnap = await agentDoc.get();
-    const agent = agentSnap.data();
-    agent.id = agentSnap.id;
-    const file = await createImageForBucket(GEMINI_API_KEY.value(), personaImagePrompt(agent), agent.id);
+    const pDoc = db.collection('persona').doc(request.data.id);
+    const pSnapshot = await pDoc.get();
+    const persona = pSnapshot.data();
+    persona.id = pSnapshot.id;
+    const buffer = await ___igquery(GEMINI_API_KEY.value(), personaImagePrompt(persona));
+    const file = await createImageForBucket(buffer, id);
     const downloadURL = await getDownloadURL(file);
     console.log(downloadURL);
-    const r = await agentDoc.update({ image: downloadURL });
+    const r = await pDoc.update({ image: downloadURL });
     return { url: downloadURL };
 }
 
-async function createImageForBucket(key, prompt, root = "member") {
-    console.log('create ' + prompt);
-    var buff = await ___igquery(key, prompt.trim());
+async function createImageForBucket(buff, root = "member") {
     const morepath = Math.floor(Math.random() * 10000000000);
     const filePath = `${root}/${morepath}/pic.jpg`;
     const file = bucket.file(filePath);
     await file.save(buff);
     return file;
+}
+
+
+// create an image for an "app"
+function getAppFilePath(app) {
+    return "/apps/" + app + ".png";
+}
+exports.createAppImg1 = functions.https.onRequest({ cors: true, secrets: [GEMINI_API_KEY] },
+    async (request, res) => {
+        let filepath = getAppFilePath(request.query.app);
+        const file = bucket.file(filepath);
+        const exists = await file.exists();
+        if (!exists[0]) {
+            let type = "rounded glyph"; // neumorphic glassomorphic rounded glyph 3d cartoon frosted glass etc
+            let content = "Make a "+type+" app icon for: "+request.query.app+". It should look exactly like the current app icon for this app or like a familiar icon for this category of app. It should be contained in a circle that extends to each edge of the image. The icon should have contrast and be legible even at small sizes (use positive/negative space instead of keylines).";
+            console.log(content)
+            const buffer = await ___igquery(GEMINI_API_KEY.value(), content);
+            await file.save(buffer);
+
+            // const data = await sharp(buffer)
+            //     .resizeTo(128, 128)
+            //     .toFormat('png')
+            //     .toBuffer();
+        }
+        const downloadURL = await getDownloadURL(file);
+        res.set('Content-Type', 'application/json');
+        res.status(200).send(JSON.stringify({ url: downloadURL }));
+    }
+);
+
+exports.createBg1 = functions.https.onRequest({ cors: true, secrets: [GEMINI_API_KEY] },
+    async (request, res) => {
+        const pDoc = db.collection('persona').doc(request.query.id);
+        const pSnapshot = await pDoc.get();
+        const persona = pSnapshot.data();
+        persona.id = pSnapshot.id;
+
+        const content = "Make two amazing lock screen and background wallpaper image for this person's mobile phone. " +
+        "Put one for daytime on the left and another for evening on the right. Make sure each fills exactly half the canvas and touches and edge or the center line. No borders or matts. Full bleed."+
+        "Dont use photography. Dont show poeple. Make the wallpaer atmospheric or patterned.  "+
+        "Make the image based on the person's hobbies. Be authentic to their vibe.   "+
+        "Person info: " + JSON.stringify(persona);
+
+        const buffer = await ___igquery(GEMINI_API_KEY.value(), content);
+        const file = await createImageForBucket(buffer, persona.id);
+        const downloadURL = await getDownloadURL(file);
+        console.log(downloadURL);
+        let updateD = {};
+        updateD["imageBG"] = downloadURL;
+        const r = await pDoc.update(updateD);
+
+        res.set('Content-Type', 'application/json');
+        res.status(200).send(JSON.stringify({ url: downloadURL }));
+
+    }
+);
+
+// experiment to create an image for persona afternoon / evening etc
+exports.createImg1 = functions.https.onRequest({ secrets: [GEMINI_API_KEY] },
+    async (request, res) => {
+        // get persona
+        const pDoc = db.collection('persona').doc(request.query.id);
+        const pSnapshot = await pDoc.get();
+        const persona = pSnapshot.data();
+        persona.id = pSnapshot.id;
+        // get the day
+        let day = null;
+        let querySnapshot = await db.collection("day")
+            .where("personaId", "==", request.query.id)
+            .where("date", "==", request.query.date)
+            .get();
+        querySnapshot.forEach((snap) => {
+            day = snap.data();
+            day.id = snap.id;
+        });
+        console.log(day);
+
+        let personBuf = await getUrlBytes(persona.image);
+
+        // make image of them in the current environemnt of observations
+        const prompt = "Make a photo taken on a mobile phone where the person pictured (" +
+            persona.name + ") is going through the " + request.query.dayPart + " of their day. Make sure the photo " +
+            "is natural and candid. Don't overlay text or speech bubbles. Here is " +
+            "their day: " + JSON.stringify(day);
+
+        const content = [
+            { text: prompt },
+            {
+                inlineData: {
+                    mimeType: "image/jpeg",
+                    data: personBuf.toString("base64"),
+                },
+            },
+        ];
+        const buffer = await ___igquery(GEMINI_API_KEY.value(), content);
+        const file = await createImageForBucket(buffer, persona.id);
+        const downloadURL = await getDownloadURL(file);
+        console.log(downloadURL);
+        let updateD = {};
+        updateD["image" + request.query.dayPart] = downloadURL;
+        const r = await pDoc.update(updateD);
+
+        res.set('Content-Type', 'application/json');
+        res.status(200).send(JSON.stringify({ url: downloadURL }));
+
+
+    });
+
+
+const https = require('https');
+async function getUrlBytes(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, (response) => {
+            if (response.statusCode !== 200) {
+                reject(new Error(`Request failed with status code ${response.statusCode}`));
+                return;
+            }
+            const chunks = [];
+            response.on('data', (chunk) => {
+                chunks.push(chunk);
+            });
+            response.on('end', () => {
+                const buffer = Buffer.concat(chunks);
+                resolve(buffer);
+            });
+            response.on('error', (err) => {
+                reject(err);
+            });
+        }).on('error', (err) => {
+            reject(err);
+        });
+    });
 }

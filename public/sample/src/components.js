@@ -1,6 +1,6 @@
 class PersonaListUI extends Component {
     constructor(parent, options) {
-        super(parent, { class: "row-container", ...options });
+        super(parent, { class: "row-container row-container-wrap", ...options });
     }
     draw() {
         this.clear();
@@ -46,7 +46,7 @@ class PersonComponent extends Component {
 
 class DayTabs extends Component {
     constructor(parent, options, data) {
-        super(parent, { class: "row-container day-tabs", ...options });
+        super(parent, { class: "row-container row-container-wrap day-tabs", ...options });
         data.forEach(day => {
             let t = new Button(this, { class: "tab-button" }, { text: day.date });
             t.addListener('click', e => {
@@ -66,16 +66,20 @@ class DayTabs extends Component {
 class ObservationsView extends Component {
     constructor(parent, data) {
         super(parent, {});
-        let slider = new ObservationSlider(this, {}, { min: 0, max: 20, length: data.length });
+        let slider = new ObservationSlider(this, {}, { min: 0, max: 50, length: data.length });
         let events = new ObservationEvents(this, data);
         let c = new Component(this, { class: "row-container" });
-        this.gen = new Button(c, {}, { text: "Generate" })
+        this.gen = new Button(c, {}, { text: "Space" })
+        // this.genImg1 = new Button(c, {}, { text: "Morning" })
+        // this.genImg2 = new Button(c, {}, { text: "Afternoon" })
+        this.genImg3 = new Button(c, {}, { text: "New bg" })
         // new Button(c, {}, { text: "Other" })
         slider.addListener("value", e => {
             events.show(slider.data.min, slider.data.max - slider.data.min)
         });
         events.show(slider.data.min, slider.data.max - slider.data.min);
         this.slider = slider;
+        this.slider.draw();
     }
 }
 
