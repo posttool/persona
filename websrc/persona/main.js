@@ -1,44 +1,12 @@
 "use strict";
 
-import { initializeApp } from "firebase/app";
-import { getFunctions, httpsCallable, connectFunctionsEmulator } from "firebase/functions";
-import { initNavigation } from "./firebasey.js";
-import {
-    PersonaListUI, PersonComponent,
-    TextComponent, Component, Button
-} from "./components.js";
-import {
-    DayTabs, ObservationsView
-} from "./observations.js";
-import { $ } from "./util.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyDSff1RU2_hcEjtJtCS_uloSgbbYrnaoLI",
-    authDomain: "aura-persona.firebaseapp.com",
-    projectId: "aura-persona",
-    storageBucket: "aura-persona.firebasestorage.app",
-    messagingSenderId: "643081543085",
-    appId: "1:643081543085:web:81772b8e4beddf8aa2d524"
-};
-
-const app = initializeApp(firebaseConfig);
-const functions = getFunctions(app);
+import { initNavigation } from "../common/firebasey.js";
+import { PersonaListUI, PersonComponent, TextComponent, Component, Button } from "../common/components.js";
+import { DayTabs, ObservationsView } from "../common/observations.js";
+import { $ } from "../common/util.js";
+import { getPersona, listDaysPersona, listObservations, createDayForPersona, listPersona } from "../common/services.js"
 
 const LOG1 = false;
-
-if (window.location.hostname.includes("localhost")) {
-    console.log("USING EMULATOR!")
-    // connectFirestoreEmulator(getFirestore(), "localhost", 8080);
-    connectFunctionsEmulator(functions, "localhost", 5001);
-}
-
-const createPersona = httpsCallable(functions, "createPersona");
-const createPersona2 = httpsCallable(functions, "createPersona2");
-const listPersona = httpsCallable(functions, "listPersona");
-const getPersona = httpsCallable(functions, "getPersona");
-const createDayForPersona = httpsCallable(functions, "createDayForPersona");
-const listDaysPersona = httpsCallable(functions, "listDaysForPersona");
-const listObservations = httpsCallable(functions, "listObservations");
 
 console.log(window.location.pathname);
 const urlParams = new URLSearchParams(window.location.search);
@@ -97,7 +65,7 @@ function showHome() {
 }
 
 const SERVICE_URL = "https://us-central1-aura-persona.cloudfunctions.net/";
-    // const SERVICE_URL= "http://localhost:5001/aura-persona/us-central1/";
+// const SERVICE_URL= "http://localhost:5001/aura-persona/us-central1/";
 
 function displayPersona(id) {
     let root = new Component($("root"), { class: "row-container" });

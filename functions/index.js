@@ -41,7 +41,7 @@ function parseJSON(r) {
 async function getGemini(key, prompt) {
     const googleGenAI = new GoogleGenAI({ apiKey: key });
     const response = await googleGenAI.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model:  "gemini-3-pro-preview",//'gemini-2.5-flash',
         contents: prompt,
     });
     return response.candidates[0].content.parts[0].text;
@@ -105,7 +105,8 @@ const {
     personaImagePrompt,
     S2_DAY,
     S3_AMBIENT_OBSERVATIONS,
-    S42_ORGANIZE_AND_TRACK
+    S42_ORGANIZE_AND_TRACK_MIRA,
+    S42_ORGANIZE_AND_TRACK_PDS
 } = require("./prompt.js");
 
 exports.createPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
@@ -307,35 +308,6 @@ async function generateEventsForDay(persona, day, step = 0) {
 }
 
 
-exports.makeASpace1 = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
-    async (request, context) => {
-        let aa = "";
-        let querySnapshot = await db.collection("observations")
-            .where("personaId", "==", request.data.id)
-            .where("date", "==", request.data.date)
-            .orderBy("time")
-            .get();
-        let x = 0;
-        querySnapshot.forEach((doc) => {
-            let d = doc.data();
-            d.id = doc.id;
-            delete d.personaId;
-            delete d.date;
-            if (x >= request.data.startIdx && x <= request.data.endIdx)
-                aa += JSON.stringify(d) + "\n";
-            x++;
-        });
-        let prompt = processTemplate(S42_ORGANIZE_AND_TRACK, {
-            // user: JSON.stringify(persona),
-            observations: aa,
-            date: request.data.date
-        });
-        console.log(prompt)
-        let spaces = await callLLM(GEMINI_API_KEY.value(), prompt);
-        return spaces;
-    });
-
-
 
 
 
@@ -392,14 +364,15 @@ async function createImageForBucket(buff, root = "member") {
 function getAppFilePath(app) {
     return "/apps/" + app + ".png";
 }
-exports.createAppImg1 = functions.https.onRequest({ cors: true, secrets: [GEMINI_API_KEY] },
+
+exports.createAppImg = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, res) => {
-        let filepath = getAppFilePath(request.query.app);
+        let filepath = getAppFilePath(request.data.app);
         const file = bucket.file(filepath);
         const exists = await file.exists();
         if (!exists[0]) {
             let type = "rounded glyph"; // neumorphic glassomorphic rounded glyph 3d cartoon frosted glass etc
-            let content = "Make a "+type+" app icon for: "+request.query.app+". It should look exactly like the current app icon for this app or like a familiar icon for this category of app. It should be contained in a circle that extends to each edge of the image. The icon should have contrast and be legible even at small sizes (use positive/negative space instead of keylines).";
+            let content = "Make a "+type+" app icon for: "+request.data.app+". It should look exactly like the current app icon for this app or like a familiar icon for this category of app. It should be contained in a circle that extends to each edge of the image. The icon should have contrast and be legible even at small sizes (use positive/negative space instead of keylines).";
             console.log(content)
             const buffer = await ___igquery(GEMINI_API_KEY.value(), content);
             await file.save(buffer);
@@ -410,8 +383,7 @@ exports.createAppImg1 = functions.https.onRequest({ cors: true, secrets: [GEMINI
             //     .toBuffer();
         }
         const downloadURL = await getDownloadURL(file);
-        res.set('Content-Type', 'application/json');
-        res.status(200).send(JSON.stringify({ url: downloadURL }));
+        return { url: downloadURL };
     }
 );
 
@@ -423,7 +395,8 @@ exports.createBg1 = functions.https.onRequest({ cors: true, secrets: [GEMINI_API
         persona.id = pSnapshot.id;
 
         const content = "Make two amazing lock screen and background wallpaper image for this person's mobile phone. " +
-        "Put one for daytime on the left and another for evening on the right. Make sure each fills exactly half the canvas and touches and edge or the center line. No borders or matts. Full bleed."+
+        "Put one for daytime on the left and another for evening on the right. "+
+        "Make sure each wallpaper fills exactly half the canvas and touches and edge or the center line. No borders or matts. Full bleed. Another program will crop the images an expects them to fill the canvas. "+
         "Dont use photography. Dont show poeple. Make the wallpaer atmospheric or patterned.  "+
         "Make the image based on the person's hobbies. Be authentic to their vibe.   "+
         "Person info: " + JSON.stringify(persona);
@@ -518,3 +491,75 @@ async function getUrlBytes(url) {
         });
     });
 }
+
+
+
+/// spaces...
+
+
+exports.makeSpaceMira = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
+    async (request, context) => {
+         // get persona
+        const pDoc = db.collection('persona').doc(request.data.id);
+        const pSnapshot = await pDoc.get();
+        const persona = pSnapshot.data();
+        // collect observations
+        let observations = "";
+        let querySnapshot = await db.collection("observations")
+            .where("personaId", "==", request.data.id)
+            .where("date", "==", request.data.date)
+            .orderBy("time")
+            .get();
+        let x = 0;
+        querySnapshot.forEach((doc) => {
+            let d = doc.data();
+            d.id = doc.id;
+            delete d.personaId;
+            delete d.date;
+            if (x >= request.data.start && x <= request.data.end)
+                observations += JSON.stringify(d) + "\n";
+            x++;
+        });
+        let prompt = processTemplate(S42_ORGANIZE_AND_TRACK_MIRA, {
+            user: persona.name,
+            observations: observations,
+            date: request.data.date
+        });
+        console.log(prompt)
+        let spaces = await callLLM(GEMINI_API_KEY.value(), prompt);
+        return spaces;
+    });
+
+
+exports.makeSpacePds = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
+    async (request, context) => {
+         // get persona
+        const pDoc = db.collection('persona').doc(request.data.id);
+        const pSnapshot = await pDoc.get();
+        const persona = pSnapshot.data();
+        // collect observations
+        let observations = "";
+        let querySnapshot = await db.collection("observations")
+            .where("personaId", "==", request.data.id)
+            .where("date", "==", request.data.date)
+            .orderBy("time")
+            .get();
+        let x = 0;
+        querySnapshot.forEach((doc) => {
+            let d = doc.data();
+            d.id = doc.id;
+            delete d.personaId;
+            delete d.date;
+            if (x >= request.data.start && x <= request.data.end)
+                observations += JSON.stringify(d) + "\n";
+            x++;
+        });
+        let prompt = processTemplate(S42_ORGANIZE_AND_TRACK_PDS, {
+            user: persona.name,
+            observations: observations,
+            date: request.data.date
+        });
+        console.log(prompt)
+        let spaces = await callLLM(GEMINI_API_KEY.value(), prompt);
+        return spaces;
+    });

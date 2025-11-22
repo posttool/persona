@@ -146,6 +146,28 @@ class PersonTile extends Component {
     }
 }
 
+export class PersonaListUISmall extends Component {
+    constructor(parent, options) {
+        super(parent, { class: "row-container wrap", ...options });
+    }
+    draw() {
+        this.clear();
+        this._data.forEach(p => {
+            new PersonTileSmall(this, p).click(e => {
+                this.emit('value', p);
+            });
+        })
+    }
+}
+
+class PersonTileSmall extends Component {
+    constructor(parent, p) {
+        super(parent, { class: "pointer" });
+        new ImageComponent(this, { class: "rounded", width: "80" }, { src: p.image, alt: p.name });
+        // new TextComponent(this, { class: "width-small" }, { text: p.name, width: 50 });
+    }
+}
+
 
 export class PersonComponent extends Component {
     constructor(parent, data) {
@@ -175,6 +197,21 @@ export class PersonComponent extends Component {
     }
 
 }
+
+
+export class PersonComponentSmall extends Component {
+    constructor(parent, data) {
+        super(parent, { class: "row-container " });
+        this.back = new TextComponent(this, { class: "material-symbols-outlined pointer", el: "h1" }, { text: "arrow_back" });
+        new ImageComponent(this, { class: "rounded", width: "120" }, { src: data.image });
+        let textC = new Component(this);
+        new TextComponent(textC, { class: "person" }, { text: data.name });
+        new TextComponent(textC, { class: "person" }, { text: data.city });
+        this.daysContainer = new Component(textC);
+    }
+
+}
+
 
 function formatTime(date) {
     const hours = String(date.getHours()).padStart(2, '0');

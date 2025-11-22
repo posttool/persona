@@ -10,10 +10,29 @@ const rootConfig = {
 
 const appConfig = {
   ...rootConfig,
-  entry: './websrc/main.js',
+  entry: './websrc/persona/main.js',
   output: {
     filename: '_main.js',
     path: path.resolve(__dirname, 'public/src'),
+  },
+};
+
+const miraConfig = {
+  ...rootConfig,
+  entry: './websrc/mira/main.js',
+  output: {
+    filename: '_main.js',
+    path: path.resolve(__dirname, 'public/mira/res'),
+  },
+};
+
+
+const pdsConfig = {
+  ...rootConfig,
+  entry: './websrc/pds/main.js',
+  output: {
+    filename: '_main.js',
+    path: path.resolve(__dirname, 'public/pds/res'),
   },
 };
 
@@ -37,4 +56,4 @@ const appConfig = {
 //   },
 // };
 
-module.exports = [appConfig]; //, serviceWorkerConfig
+module.exports = [appConfig, miraConfig, pdsConfig]; //, serviceWorkerConfig

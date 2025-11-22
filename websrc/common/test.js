@@ -463,8 +463,8 @@ const Jaime1 = [
   }
 ]
 
-const Jaime = { id: "UtNtD1I9ZmRWBPWEl64s", date: "2025-11-07"}
-const Jaime2 = [
+export const Jaime = { id: "UtNtD1I9ZmRWBPWEl64s", date: "2025-11-07"}
+export const Jaime2 = [
   {
     "name": "Social Plans",
     "subject": "Queer Youth Space HK Meetup",

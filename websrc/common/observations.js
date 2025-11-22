@@ -20,13 +20,33 @@ export class DayTabs extends Component {
     }
 }
 
+
+export class DayTabsSmall extends Component {
+    constructor(parent, options, data) {
+        super(parent, { class: "row-container row-container-wrap day-tabs", ...options });
+        data.forEach(day => {
+            let t = new Button(this, { class: "tab-button" }, { text: day.date });
+            t.addListener('click', e => {
+                console.log(day);
+                this.emit('value', day);
+                this.children.forEach(b => {
+                    if (b == t)
+                        b.el.classList.add("selected");
+                    else
+                        b.el.classList.remove("selected");
+                });
+            });
+        });
+    }
+}
+
 export class ObservationsView extends Component {
     constructor(parent, data) {
         super(parent, {});
         let slider = new ObservationSlider(this, {}, { min: 0, max: 35, length: data.length });
         let events = new ObservationEvents(this, data);
-        let c = new Component(this, { class: "row-container" });
-        this.jsonButton  = new Button(c, {}, { text: "Get JSON" });
+        // let c = new Component(this, { class: "row-container" });
+        // this.jsonButton  = new Button(c, {}, { text: "Get JSON" });
         
         // new Button(c, {}, { text: "Other" })
         slider.addListener("value", e => {

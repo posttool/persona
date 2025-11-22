@@ -1,3 +1,5 @@
+import { Component, TextComponent, Button, ImageComponent } from "../common/components.js";
+
 function getObservationString(data) {
     if (data == null)
         return "";
@@ -9,11 +11,11 @@ function getObservationString(data) {
 }
 
 
-class SpacesComponent extends Component {
-    constructor(parent, spaces, observationMap = {}) {
-        super(parent, { class: 'spaces' });
-        this.date = new TextComponent(this, { class: "time1" }, { text: "NOV.15" });
-        this.time = new TextComponent(this, { class: "time2" }, { text: "00:00:00" });
+export class SpacesComponent extends Component {
+    constructor(parent, headline, date, spaces, observationMap = {}) {
+        super(parent, { class: 'spaces ' });
+        this.headline = new TextComponent(this, { class: "time1" }, { text: headline });
+        this.time = new TextComponent(this, { class: "time2" }, { text: "Fri Oct 22 ☀️ 76° F" });
         // let spacesComponent = new Component(this);
         // let spaceComponent = new Component(this);
         let maxTime = "00:00";
@@ -27,62 +29,37 @@ class SpacesComponent extends Component {
                     }
                 });
             }
-            if (space.tracking && space.tracking.actions && space.tracking.actions.length != 0) {
-                new SpaceComponent(this, space, observationMap);
-            }
         });
-        this.time.data = { text: maxTime };
+        // this.time.data = { text: maxTime }; // TBD!!!
+        let c =new Component(this, {class: "row-container wrap"});
+        let idx = 0;
         spaces.forEach(space => {
-            if (space.tracking && space.tracking.actions.length == 0) {
-                let sc = new SpaceComponent(this, space, observationMap);
-                sc.el.classList.add("no-action");
+            let sc = new SpaceComponent(c, space, observationMap);
+            idx++;
+            if (idx == 2 || idx == 3) {
+                sc.el.style.width = "47%";
             }
-
         });
     }
 }
 
 class SpaceComponent extends Component {
     constructor(parent, space, observationMap) {
-        super(parent, { class: 'space ' });
+        super(parent, { class: 'space' });
         this.lastUpdate = -1;
 
-        this.mini = new Component(this, { class: "row-container" });
-        // let col1 = new Component(row);
-        // let col2 = new Component(row, {class: "flexend"});
-        // this.title = new TextComponent(col1, { class: "big-text" }, { text: space.name });
-        this.title = new TextComponent(this.mini, { class: "medium-text" }, { text: space.subject });
-        this.title.el.style.width = "100%"
+        new TextComponent(this, { class: "space-subject" }, { text: space.subject });
+        new TextComponent(this, { class: "space-reason" }, { text: space.tracking.reason });
         if (space.tracking.expires && space.tracking.expires != "N/A")
-            new TextComponent(this.mini, { class: "pill flexend" }, { text: space.tracking.expires });
-        else
-            new TextComponent(this.mini, { class: "pill blue flexend" }, { text: space.relatedObservations.length });
+            new TextComponent(this, { class: "pill " }, { text: space.tracking.expires });
+ 
+         if (space.tracking.actions)
+            new ButtonRow(this, space.tracking.actions);
 
-        this.isExtended = false;
-        let that = this;
+ 
+        //     new TextComponent(this, { class: "pill blue " }, { text: space.relatedObservations.length });
 
-        this.mini.click(doClick);
-
-        function doClick() {
-            if (that.extended == null) {
-                that.extended = new SpaceComponentExtended(that, space, observationMap);
-                that.extended.title.click(doClick)
-                that.extended.visible(false);
-            }
-            if (that.isExtended) {
-                that.mini.visible(true);
-                that.extended.visible(false);
-                that.isExtended = false;
-            } else {
-                that.mini.visible(false);
-                that.extended.visible(true);
-                that.isExtended = true;
-                that.extended.el.classList.add("new-content");
-                setTimeout(() => {
-                    that.extended.el.classList.add('show');
-                }, 10);
-            }
-        }
+        
         // new GeneratedImage(col2,{class:"rounded"},
         //     "Pick a key element of this info and create a pencil drawing. Do not include people: "+space.tracking.reason);
 
@@ -103,7 +80,7 @@ class SpaceComponentExtended extends Component {
     constructor(parent, space, observationMap) {
         super(parent, { class: 'space-card' });
         this.title = new TextComponent(this, { class: "medium-text padded" }, { text: space.subject });
-        if (space.tracking.expires && space.tracking.expires!="N/A")
+        if (space.tracking.expires && space.tracking.expires != "N/A")
             new TextComponent(this, { class: "padded bold" }, { text: space.tracking.expires });
         new TextComponent(this, { class: "padded" }, { text: space.tracking.reason });
         if (space.tracking.actions)
@@ -141,19 +118,21 @@ class ButtonRow extends Component {
 
 }
 
+import { createAppImage } from "../common/services.js";
+
 class AppAction extends Component {
     constructor(parent, action) {
-        super(parent, {} );
+        super(parent, {});
         let c = new Component(this, { class: 'app-action-tile' });
         let i = new ImageComponent(c, { width: 32, class: "app-icon" });
-        dofetch(SERVICE_URL + "createAppImg1?app=" + action.app, {}, obj => {
+        createAppImage({app: action.app}).then(obj => {
             console.log(obj)
-            i.data = {src: obj.url};
+            i.data = { src: obj.data.url };
         });
-        if (Object.keys(action.data).length!=0) {
+        if (Object.keys(action.data).length != 0) {
             let t2 = new SimpleActionComponent(c, action);
         }
-        let t1 = new Button(this, {class:"small-button"}, { text: action.intent });
+        let t1 = new Button(this, { class: "small-button" }, { text: action.intent });
 
         c.click(e => {
             console.log(action);
@@ -177,8 +156,8 @@ class SimpleActionComponent extends Component {
     constructor(parent, action) {
         super(parent, { class: '' });
         for (let p in action.data) {
-           let t1 = new TextComponent(this, {class: "grey"}, { text: p });
-           let t2 = new TextComponent(this, {class: "padded"}, { text: action.data[p] });
+            let t1 = new TextComponent(this, { class: "grey" }, { text: p });
+            let t2 = new TextComponent(this, { class: "padded" }, { text: action.data[p] });
         }
     }
 }

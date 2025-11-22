@@ -1,6 +1,4 @@
 #phone {
-    background-image: url("google_wallpapers_2025_exploration_sh20003_v03-26_00000\ 1.png");
-    /* filter: contrast(120%) brightness(60%) saturate(150%) hue-rotate(90deg); */
     width: 412px;
     height: 919px;
     border-radius: 68px;
@@ -8,6 +6,18 @@
     top: 40px;
     left: 20px;
     overflow-y: scroll;
+}
+
+#phoneBg {
+    background-image: url("google_wallpapers_2025_exploration_sh20003_v03-26_00000\ 1.png");
+    /* filter: contrast(120%) brightness(60%) saturate(150%) hue-rotate(90deg); */
+    opacity: 80%;
+    width: 412px;
+    height: 919px;
+    border-radius: 68px;
+    position: absolute;
+    top: 40px;
+    left: 20px;
 }
 
 #phone .header {
@@ -52,7 +62,7 @@
     padding: 32px 24px 24px 32px;
     margin: 10px 0 10px 0;
     border-radius: 48px;
-    background: #dff2ebc0;
+    background: #dff2ebdb;
 }
 
 #spaces .space.no-action{
