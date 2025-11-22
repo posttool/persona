@@ -40,7 +40,7 @@
     leading-trim: both;
     text-edge: cap;
     font-family: "Google Sans Flex";
-    font-size: 84px;
+    font-size: 64px;
     font-style: normal;
     font-weight: 600;
     line-height: 80%;
@@ -207,7 +207,7 @@ letter-spacing: var(--Variable-Body-Medium-Tracking, 0);
 
 
 .app-action-tile {
-    background-color: white;
+    background-color: rgba(255, 255, 255, 0.53);
     border-radius: 20px;
     position: relative;
     font-size: 11px;
@@ -217,12 +217,9 @@ letter-spacing: var(--Variable-Body-Medium-Tracking, 0);
 }
 
 .app-icon {
-    position: absolute;
-    top: -10px;
-    right: -10px;
     border-radius: 20px;
-    width: 32px;
-    height: 32px;
+    width: 16px;
+    height: 16px;
 }
 
 .small-button {

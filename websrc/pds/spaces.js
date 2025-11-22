@@ -1,4 +1,5 @@
 import { Component, TextComponent, Button, ImageComponent } from "../common/components.js";
+import { createAppImg } from "../common/services.js";
 
 function getObservationString(data) {
     if (data == null)
@@ -53,8 +54,8 @@ class SpaceComponent extends Component {
         if (space.tracking.expires && space.tracking.expires != "N/A")
             new TextComponent(this, { class: "pill " }, { text: space.tracking.expires });
  
-         if (space.tracking.actions)
-            new ButtonRow(this, space.tracking.actions);
+        //  if (space.tracking.actions)
+        //     new ButtonRow(this, space.tracking.actions);
 
  
         //     new TextComponent(this, { class: "pill blue " }, { text: space.relatedObservations.length });
@@ -118,25 +119,26 @@ class ButtonRow extends Component {
 
 }
 
-import { createAppImage } from "../common/services.js";
 
 class AppAction extends Component {
     constructor(parent, action) {
         super(parent, {});
-        let c = new Component(this, { class: 'app-action-tile' });
-        let i = new ImageComponent(c, { width: 32, class: "app-icon" });
-        createAppImage({app: action.app}).then(obj => {
+        let t1 = new Button(this, { class: "small-button" }, { text: action.intent });
+        let i = new ImageComponent(t1.el, { width: 32, class: "app-icon" });
+        createAppImg({app: action.app}).then(obj => {
             console.log(obj)
             i.data = { src: obj.data.url };
         });
-        if (Object.keys(action.data).length != 0) {
-            let t2 = new SimpleActionComponent(c, action);
-        }
-        let t1 = new Button(this, { class: "small-button" }, { text: action.intent });
 
-        c.click(e => {
-            console.log(action);
-        })
+
+
+                // if (Object.keys(action.data).length != 0) {
+        //     let t2 = new SimpleActionComponent(c, action);
+        // }
+
+        // c.click(e => {
+        //     console.log(action);
+        // })
 
     }
 }

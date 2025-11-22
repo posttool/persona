@@ -1,4 +1,5 @@
 import {Component, TextComponent, Button, ImageComponent } from "../common/components.js";
+import { createAppImg } from "../common/services.js";
 
 function getObservationString(data) {
     if (data == null)
@@ -148,9 +149,9 @@ class AppAction extends Component {
         super(parent, {} );
         let c = new Component(this, { class: 'app-action-tile' });
         let i = new ImageComponent(c, { width: 32, class: "app-icon" });
-        dofetch(SERVICE_URL + "createAppImg1?app=" + action.app, {}, obj => {
+        createAppImg({app: action.app}).then( obj => {
             console.log(obj)
-            i.data = {src: obj.url};
+            i.data = {src: obj.data.url};
         });
         if (Object.keys(action.data).length!=0) {
             let t2 = new SimpleActionComponent(c, action);

@@ -21,9 +21,9 @@ document.fonts.ready.then(() => {
     //     obs.forEach(o => { obsMap[o.id] = o; })
     //     new SpacesComponent($("spaces"), Jaime2, obsMap);
     // });      
-    createAppImg({app:"doodah"}).then(d=>{
-        console.log(d);
-    })
+    // createAppImg({app:"doodah"}).then(d=>{
+    //     console.log(d);
+    // })
 });
 
 function doListPersona() {

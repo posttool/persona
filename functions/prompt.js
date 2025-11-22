@@ -499,7 +499,7 @@ name: Weather, subject: Morning rain
 Output the spaces as JSON. Put the most important material first.
 Organize the spaces in a way that helps me see whats most important at any given time.
 Don't refer to \${user} by name. Use you if its necessary to refer to them.
-Greetings should reference the time of day or be a three word overview of the main topics.
+Greetings can reference the time of day or be a three word overview of the main topics. Don't be negative.
 Reasons should be under 30 words.
 Expires should be under 3 words and 20 characters. If there is no expiration date, use N/A.
 Actions should include the apps the user uses, as well as system apps, like Notes, Todos, Voice Recorder, Camera, etc.
