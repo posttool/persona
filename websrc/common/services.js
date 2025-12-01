@@ -28,3 +28,6 @@ export const listObservations = httpsCallable(functions, "listObservations");
 export const makeSpaceMira = httpsCallable(functions, "makeSpaceMira");
 export const makeSpacePds = httpsCallable(functions, "makeSpacePds");
 export const createAppImg = httpsCallable(functions, "createAppImg");
+export const createEditorialImg = httpsCallable(functions, "createEditorialImg");
+export const createBGForPersona = httpsCallable(functions, "createBGForPersona");
+export const makeSpaceBanaux = httpsCallable(functions, "makeSpaceBanaux");

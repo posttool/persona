@@ -70,4 +70,4 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
-public/src/_main.js
+_main.js

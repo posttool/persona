@@ -13,14 +13,14 @@ function getObservationString(data) {
 
 
 export class SpacesComponent extends Component {
-    constructor(parent, headline, date, spaces, observationMap = {}) {
+    constructor(parent, data, date, observationMap = {}) {
         super(parent, { class: 'spaces ' });
-        this.headline = new TextComponent(this, { class: "time1" }, { text: headline });
+        this.headline = new TextComponent(this, { class: "time1" }, { text: data.greeting });
         this.time = new TextComponent(this, { class: "time2" }, { text: "Fri Oct 22 ☀️ 76° F" });
         // let spacesComponent = new Component(this);
         // let spaceComponent = new Component(this);
         let maxTime = "00:00";
-        spaces.forEach(space => {
+        data.spaces.forEach(space => {
             // console.log(space)
             if (space.relatedObservations) {
                 space.relatedObservations.forEach(obsId => {
@@ -32,9 +32,13 @@ export class SpacesComponent extends Component {
             }
         });
         // this.time.data = { text: maxTime }; // TBD!!!
-        let c =new Component(this, {class: "row-container wrap"});
+        let c = new Component(this, { class: "row-container wrap" });
+        if (data.tentativeTodos.length!=0)  
+            new SpaceTodos(c, data.tentativeTodos);
+        if (data.tentativeCalendar.length!=0)  
+            new SpaceCalendar(c, data.tentativeCalendar);
         let idx = 0;
-        spaces.forEach(space => {
+        data.spaces.forEach(space => {
             let sc = new SpaceComponent(c, space, observationMap);
             idx++;
             if (idx == 2 || idx == 3) {
@@ -43,24 +47,65 @@ export class SpacesComponent extends Component {
         });
     }
 }
+class SpaceTodos extends Component {
+    constructor(parent, data) {
+        super(parent, { class: 'space-todos' });
+        data.forEach(e => {
+            let c = new Component(this, {class:"item"});
+            new TextComponent(c, {class:"type"}, { text: e.todo });
+            new Component(c, {class:"check"});
+        });
+    }
+}
+
+class SpaceCalendar extends Component {
+    constructor(parent, data) {
+        super(parent, { class: 'space-calendar' });
+        data.forEach(e => {
+            let d = new Date(e.start)
+            let c = new Component(this, {class:"item"});
+            new TextComponent(c, {class:"date"}, { text: d.getHours()+":"+d.getMinutes() });
+            new TextComponent(c, {class:"type"}, { text: e.title });
+        });
+    }
+}
+
+import {createEditorialImg} from "../common/services.js";
+class GenerativeImage extends ImageComponent {
+    constructor(parent, prompt) {
+        super(parent, {});
+        createEditorialImg({prompt: prompt}).then(e=>{
+            console.log(e);
+            this.data = {src: e.data.url};
+        });
+    }
+    draw(){
+        super.draw();
+        console.log(""+this.data.src)
+    }
+}
+
 
 class SpaceComponent extends Component {
     constructor(parent, space, observationMap) {
         super(parent, { class: 'space' });
         this.lastUpdate = -1;
 
+        if (space.tracking.expires && space.tracking.expires != "N/A") {
+            new GenerativeImage(this,  "a thematic image of "+space.subject);
+            new TextComponent(this, { class: "space-pill " }, { text: space.tracking.expires });
+
+        }
         new TextComponent(this, { class: "space-subject" }, { text: space.subject });
         new TextComponent(this, { class: "space-reason" }, { text: space.tracking.reason });
-        if (space.tracking.expires && space.tracking.expires != "N/A")
-            new TextComponent(this, { class: "pill " }, { text: space.tracking.expires });
- 
-        //  if (space.tracking.actions)
-        //     new ButtonRow(this, space.tracking.actions);
 
- 
+         if (space.tracking.actions)
+            new ButtonRow(this, space.tracking.actions);
+
+
         //     new TextComponent(this, { class: "pill blue " }, { text: space.relatedObservations.length });
 
-        
+
         // new GeneratedImage(col2,{class:"rounded"},
         //     "Pick a key element of this info and create a pencil drawing. Do not include people: "+space.tracking.reason);
 
@@ -92,7 +137,6 @@ class SpaceComponentExtended extends Component {
         let related = new Component(this, { class: "obs-container" });
         related.visible(false);
         t.click(e => {
-            console.log(related.isVisible)
             related.visible(!related.isVisible);
         })
         space.relatedObservations.forEach(obsId => {
@@ -109,7 +153,7 @@ class SpaceComponentExtended extends Component {
 
 class ButtonRow extends Component {
     constructor(parent, actions) {
-        super(parent, { class: '' });
+        super(parent, { class: 'row-container' });
         if (actions) {
             actions.forEach(a => {
                 let t = new AppAction(this, a);
@@ -122,17 +166,16 @@ class ButtonRow extends Component {
 
 class AppAction extends Component {
     constructor(parent, action) {
-        super(parent, {});
-        let t1 = new Button(this, { class: "small-button" }, { text: action.intent });
-        let i = new ImageComponent(t1.el, { width: 32, class: "app-icon" });
-        createAppImg({app: action.app}).then(obj => {
-            console.log(obj)
+        super(parent, {class:"pds-button-1"});
+        let i = new ImageComponent(this, { width: 32, class: "app-icon" });
+        let t1 = new TextComponent(this, { class: "label" }, { text: action.intent });
+        createAppImg({ app: action.app }).then(obj => {
             i.data = { src: obj.data.url };
         });
 
 
 
-                // if (Object.keys(action.data).length != 0) {
+        // if (Object.keys(action.data).length != 0) {
         //     let t2 = new SimpleActionComponent(c, action);
         // }
 

@@ -421,22 +421,13 @@ export class Button extends Component {
     }
 }
 
-class GeneratedImage extends Component {
-    constructor(parent, prompt) {
-        super(parent);
-        let img = $$({ parent: this.el, el: 'img' });
-        img.width = "450";
-        dofetchGeminiImage(prompt, e => {
-            img.src = e;
-        });
-    }
-}
+
 
 export class ImageComponent extends Component {
-    constructor(parent, options, url={}) {
+    constructor(parent, options, data={}) {
         super(parent, { el: "img", ...options });
         this.el.width = options.width ? options.width : "200";
-        this.data = url;
+        this.data = data;
     }
     draw(){
         if (this.data.src)

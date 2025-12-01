@@ -71,6 +71,7 @@ function showDay(p, persona, day) {
         let obsMap = {};
         obs.forEach(o => { obsMap[o.id] = o; })
         let obsView = new ObservationsView(p, obs);
+        obsView.filterTypes.visible(false);
         lastObsView = obsView;
         let spaceBtn = new Button(p, {}, { text: "Generate Space" })
         spaceBtn.addListener("click", e => {
@@ -84,8 +85,12 @@ function showDay(p, persona, day) {
                 end: obsView.slider.data.max
             }).then(organized => {
                 spaceBtn.visible(true);
-                console.log(organized)
-                new SpacesComponent($("spaces"), organized.data.greeting, day.date, organized.data.spaces, obsMap);
+                console.log(organized);
+                new SpacesComponent(
+                    $("spaces"), 
+                    organized.data, 
+                    day.date, 
+                    obsMap);
             });
         });
     });

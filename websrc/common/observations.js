@@ -1,5 +1,5 @@
-import {Component, Button} from "./components.js";
-import {$$} from "./util.js";
+import { Component, Button, TextComponent } from "./components.js";
+import { $$ } from "./util.js";
 
 export class DayTabs extends Component {
     constructor(parent, options, data) {
@@ -44,17 +44,55 @@ export class ObservationsView extends Component {
     constructor(parent, data) {
         super(parent, {});
         let slider = new ObservationSlider(this, {}, { min: 0, max: 35, length: data.length });
+        let filterTypes = new FilterOptions(this, data)
         let events = new ObservationEvents(this, data);
-        // let c = new Component(this, { class: "row-container" });
-        // this.jsonButton  = new Button(c, {}, { text: "Get JSON" });
-        
-        // new Button(c, {}, { text: "Other" })
-        slider.addListener("value", e => {
-            events.show(slider.data.min, slider.data.max - slider.data.min)
-        });
-        events.show(slider.data.min, slider.data.max - slider.data.min);
+        function updateEvents(){
+            events.show(slider.data.min, slider.data.max - slider.data.min, filterTypes.data);
+        }
+        filterTypes.addListener("value", updateEvents);
+        slider.addListener("value", updateEvents);
+        updateEvents();
+        this.filterTypes = filterTypes;
         this.slider = slider;
         this.slider.draw();
+    }
+}
+
+class FilterOptions extends Component {
+    constructor(parent, data) {
+        super(parent, { class: "row-container" });
+        let map = {}
+        data.forEach(obs => {
+            map[obs.type] = true;
+        });
+        this.data = map;
+        let types = Object.keys(map).sort();
+        types.forEach(t => {
+            let c = new CheckboxOption(this, t);
+            c.addListener("value", b => {
+                this.data[t] = b;
+                this.emit("value", this.data);
+            });
+        });
+    }
+}
+
+class CheckboxOption extends Component {
+    constructor(parent, label, checked = true) {
+        super(parent, {});
+        this.check = new Component(this, { el: "input", type: "checkbox", class: "" });
+        this.text = new TextComponent(this, { el: "span", class: "small-text" }, { text: label });
+        this.data = checked;
+        //
+        this.check.el.addEventListener("change", e => {
+            this.emit("value", this.data);
+        })
+    }
+    set data(b) {
+        this.check.el.checked = b;
+    }
+    get data() {
+        return this.check.el.checked;
     }
 }
 
@@ -124,10 +162,19 @@ class ObservationEvents extends Component {
             m.visible(false);
         });
     }
-    show(start, count) {
+    show(start, count, type) {
         let end = start + count;
         this.table.children.forEach((m, idx) => {
-            m.visible(idx >= start && idx <= end);
+            let inRange = idx >= start && idx <= end;
+            let inType = type ? type[m.data.type] : true;
+            m.visible(inRange && inType);
+        })
+    }
+
+    hideAudio() {
+        this.table.children.forEach((m, idx) => {
+            console.log(m.data.type)
+            m.visible(m.data.type != "audio");
         })
     }
 }
@@ -149,7 +196,7 @@ class ObservationEvent extends Component {
             // this.deviceIcon.innerText = this._data.device
             // this.typeIcon.innerText = this._data.type;
             // this.appIcon.innerText = (this._data.senderApp ? this._data.senderApp : "");
-            if (this._data.type)    
+            if (this._data.type)
                 this.textInfo.classList.add(this._data.type.replaceAll(" ", "-"));
             this.textInfo.innerText =
                 (this._data.senderApp ? this._data.senderApp + " / " : "") +

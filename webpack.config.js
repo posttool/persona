@@ -26,7 +26,6 @@ const miraConfig = {
   },
 };
 
-
 const pdsConfig = {
   ...rootConfig,
   entry: './websrc/pds/main.js',
@@ -36,6 +35,14 @@ const pdsConfig = {
   },
 };
 
+const banauxConfig = {
+  ...rootConfig,
+  entry: './websrc/banaux/main.js',
+  output: {
+    filename: '_main.js',
+    path: path.resolve(__dirname, 'public/banaux/res'),
+  },
+};
 // const serviceWorkerConfig = {
 //   ...rootConfig,
 //   entry: './src/firebase-messaging-sw.js',
@@ -56,4 +63,4 @@ const pdsConfig = {
 //   },
 // };
 
-module.exports = [appConfig, miraConfig, pdsConfig]; //, serviceWorkerConfig
+module.exports = [appConfig, miraConfig, pdsConfig, banauxConfig]; //, serviceWorkerConfig

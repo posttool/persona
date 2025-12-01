@@ -100,16 +100,17 @@ button {
   display: flex;
   flex-direction: row;
   vertical-align: middle;
-  gap: 5px 5px;
+  gap: 8px;
 }
-.row-container-wrap {
-    flex-wrap: wrap;
+
+.wrap {
+  flex-wrap: wrap;
 }
 
 .flexend {
-    justify-content: flex-end;
-     display: flex;
-  }
+  justify-content: flex-end;
+  display: flex;
+}
     
 .huge-text {
   font-size: 32px;

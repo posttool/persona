@@ -59,6 +59,8 @@ Create valid JSON output with the following template:
 Only produce JSON with no extra writing.
 `
 
+
+
 exports.S3_AMBIENT_OBSERVATIONS = `
 Produce a list of ambient observations, direct commands from the user and messaging and agent/app notifications 
 that would be input/output on devices like earbuds, watches, glasses, phones, tablets, laptops, home speaker or tv during the day.
@@ -74,6 +76,9 @@ Make sure they relate only to this event and not the whole day.
 The person should not use technology here if it is not appropriate:
 \${event}
 
+Observation devices: phone, watch, earbud, laptop, speaker
+Observation types: wake, touch, motion, location, screen, audio, camera, notification
+Each observation type has its own considerations. For example, location data is a named place, while screen data might be an app or website.
 When the observation is ambient audio, transcript the audio. 
 Only show notifications from senderApps that the user has installed.
 People who are sending message often do not know what I am doing or where I am.
@@ -83,7 +88,7 @@ Create valid JSON output based on the following example:
 {time: "06:37:23", device: 'phone', type: 'location', data: 'home'},
 {time: "06:32:13", device: 'watch', type: 'notification', senderApp: 'LocalTube', data: 'train late'},
 {time: "06:37:23", device: 'phone', type: 'wake', data: 'biometric unlock'},
-{time: "06:37:45", device: 'phone', type: 'touch surface', data: ''},
+{time: "06:37:45", device: 'phone', type: 'touch', data: ''},
 {time: "06:38:04", device: 'laptop', type: 'screen', data: 'open Uber app'},
 {time: "06:42:09", device: 'laptop', type: 'screen', data: 'open chrome, visit gmail.com, click email from town'},
 {time: "06:43:12", device: 'phone', type: 'notification', senderApp: 'Gmail', sender: 'unknown contact', data: '<random email>'},
@@ -499,8 +504,10 @@ name: Weather, subject: Morning rain
 Output the spaces as JSON. Put the most important material first.
 Organize the spaces in a way that helps me see whats most important at any given time.
 Don't refer to \${user} by name. Use you if its necessary to refer to them.
+Tentative todos should only be added if helpful. Don't duplicate information from spaces.
 Greetings can reference the time of day or be a three word overview of the main topics. Don't be negative.
-Reasons should be under 30 words.
+Titles and Todos should be short, under 5 words.
+Reasons should be under 20 words. Reasons should be pithy, surfacing only the helpful information.
 Expires should be under 3 words and 20 characters. If there is no expiration date, use N/A.
 Actions should include the apps the user uses, as well as system apps, like Notes, Todos, Voice Recorder, Camera, etc.
 Actions should include using a Gemini Agent to do almost anything for the user from creating a web site to completing an order process.

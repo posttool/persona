@@ -1,28 +1,29 @@
-if (process.env.FUNCTIONS_EMULATOR === 'true') {
-    process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
+if (process.env.FUNCTIONS_EMULATOR === "true") {
+    process.env.FIRESTORE_EMULATOR_HOST = "localhost:8080";
 }
 
 const functions = require("firebase-functions");
-const { defineSecret } = require('firebase-functions/params');
+const { defineSecret } = require("firebase-functions/params");
 
-// const { google } = require('googleapis');
-// const customsearch = google.customsearch('v1');
-const { GoogleGenAI, Modality, createUserContent, createPartFromUri } = require('@google/genai');
-// const OPENAI_API_KEY = defineSecret('OPENAI_API_KEY');
-// const googleSearchKey = defineSecret('GOOGLE_SEARCH_KEY');
-// const googleVertexKey = defineSecret('GOOGLE_VERTEX_AI_KEY');
-const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
-// const GOOGLE_API_KEY = defineSecret('GOOGLE_API_KEY');
-// const OpenAI = require('openai');
+// const { google } = require("googleapis");
+// const customsearch = google.customsearch("v1");
+const { GoogleGenAI, Modality, createUserContent, createPartFromUri } = require("@google/genai");
+// const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
+// const googleSearchKey = defineSecret("GOOGLE_SEARCH_KEY");
+// const googleVertexKey = defineSecret("GOOGLE_VERTEX_AI_KEY");
+const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
+// const GOOGLE_API_KEY = defineSecret("GOOGLE_API_KEY");
+// const OpenAI = require("openai");
 
+const { createHash } = require( 'node:crypto');
 
 // The Firebase Admin SDK to access Firestore.
-const admin = require('firebase-admin');
-const { getDownloadURL } = require('firebase-admin/storage');
+const admin = require("firebase-admin");
+const { getDownloadURL } = require("firebase-admin/storage");
 admin.initializeApp();
 
 // Only for the server timestamp. 
-const { Firestore } = require('@google-cloud/firestore');
+const { Firestore } = require("@google-cloud/firestore");
 
 // shortcuts
 const db = admin.firestore();
@@ -38,24 +39,31 @@ function parseJSON(r) {
 }
 
 // genai functions
-async function getGemini(key, prompt) {
+async function getGemini(key, prompt, model="gemini-2.5-flash") {
     const googleGenAI = new GoogleGenAI({ apiKey: key });
     const response = await googleGenAI.models.generateContent({
-        model:  "gemini-3-pro-preview",//'gemini-2.5-flash',
+        model:  model,//gemini-3-pro-preview
         contents: prompt,
     });
     return response.candidates[0].content.parts[0].text;
 }
 
 const llmOfChoice = getGemini;
+const NodeCache = require( "node-cache" );
+const llmCache = new NodeCache();
+
 async function callLLM(key, prompt, c = 0) {
     if (c < 4) {
         if (c > 1) {
             console.log("RETRY " + c);
         }
+        let r = llmCache.get(prompt);
+        if (r != undefined) 
+            return r;
         try {
             let r = await llmOfChoice(key, prompt);
             let json = parseJSON(r);
+            llmCache.set(prompt, json);
             return json;
         } catch (e) {
             console.log(e);
@@ -66,37 +74,37 @@ async function callLLM(key, prompt, c = 0) {
     }
 }
 
-async function runStreaming(key, prompt) {
-    const ai = new GoogleGenAI({ apiKey: key });
-    const model = "gemini-2.5-flash";
+// async function runStreaming(key, prompt) {
+//     const ai = new GoogleGenAI({ apiKey: key });
+//     const model = "gemini-2.5-flash";
 
-    console.log("Streaming response:");
+//     console.log("Streaming response:");
 
-    // Use generateContentStream to get an async iterable
-    const responseStream = await ai.models.generateContentStream({
-        model: model,
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-    });
+//     // Use generateContentStream to get an async iterable
+//     const responseStream = await ai.models.generateContentStream({
+//         model: model,
+//         contents: [{ role: "user", parts: [{ text: prompt }] }],
+//     });
 
-    // Iterate over the stream chunks
-    for await (const chunk of responseStream) {
-        // Print each chunk as it arrives
-        process.stdout.write(chunk.text);
-    }
+//     // Iterate over the stream chunks
+//     for await (const chunk of responseStream) {
+//         // Print each chunk as it arrives
+//         process.stdout.write(chunk.text);
+//     }
 
-    console.log(); // New line after the stream ends
-}
+//     console.log(); // New line after the stream ends
+// }
 
-async function getOpenAI(key, prompt) {
-    const client = new OpenAI({ apiKey: key });
+// async function getOpenAI(key, prompt) {
+//     const client = new OpenAI({ apiKey: key });
 
-    const response = await client.responses.create({
-        model: 'gpt-4o',
-        input: prompt,
-    });
+//     const response = await client.responses.create({
+//         model: "gpt-4o",
+//         input: prompt,
+//     });
 
-    return response.output_text;
-}
+//     return response.output_text;
+// }
 
 const {
     processTemplate,
@@ -107,7 +115,9 @@ const {
     S3_AMBIENT_OBSERVATIONS,
     S42_ORGANIZE_AND_TRACK_MIRA,
     S42_ORGANIZE_AND_TRACK_PDS
-} = require("./prompt.js");
+} = require("./persona_prompts.js");
+
+const { P2 } = require("./genux_prompts.js");
 
 exports.createPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
@@ -115,7 +125,7 @@ exports.createPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
         let gemResults = await getGemini(GEMINI_API_KEY.value(), p);
         let personaData = parseJSON(gemResults);
         // personaData.date = Firestore.FieldValue.serverTimestamp();
-        let newPersona = await db.collection('persona').add(personaData);
+        let newPersona = await db.collection("persona").add(personaData);
         await createImageForAgent(newPersona.id);
         personaData.id = newPersona.id;
         return personaData;
@@ -127,13 +137,11 @@ exports.createPersona2 = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
         let gemResults = await getGemini(GEMINI_API_KEY.value(), p);
         let personaData = parseJSON(gemResults);
         // personaData.date = Firestore.FieldValue.serverTimestamp();
-        let newPersona = await db.collection('persona').add(personaData);
+        let newPersona = await db.collection("persona").add(personaData);
         await createImageForAgent(newPersona.id);
         personaData.id = newPersona.id;
         return personaData;
     });
-
-
 
 function personaDataResponse1(doc) {
     let data = doc.data();
@@ -167,13 +175,13 @@ exports.listPersona1 = functions.https.onRequest({ cors: true },
             aa.push(personaDataResponse1(doc));
         });
 
-        res.set('Content-Type', 'application/json');
+        res.set("Content-Type", "application/json");
         res.status(200).send(JSON.stringify(aa));
     });
 
 exports.getPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
-        const pDoc = db.collection('persona').doc(request.data.id);
+        const pDoc = db.collection("persona").doc(request.data.id);
         const pSnapshot = await pDoc.get();
         const persona = pSnapshot.data();
         persona.id = pSnapshot.id;
@@ -183,7 +191,7 @@ exports.getPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
 exports.createDayForPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
         // if ! request.data.id or ! request.data.date throw error
-        const pDoc = db.collection('persona').doc(request.data.id);
+        const pDoc = db.collection("persona").doc(request.data.id);
         const pSnapshot = await pDoc.get();
         const persona = pSnapshot.data();
         persona.id = pSnapshot.id;
@@ -206,12 +214,11 @@ exports.createDayForPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY]
         let dayData = await callLLM(GEMINI_API_KEY.value(), prompt);
         dayData.personaId = request.data.id;
         // dayData.__date = Firestore.FieldValue.serverTimestamp();
-        let writeResult = await db.collection('day').add(dayData);
+        let writeResult = await db.collection("day").add(dayData);
         dayData.id = writeResult.id;
         generateEventsForDay(persona, dayData);
         return dayData;
     });
-
 
 exports.listDaysForPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
@@ -228,7 +235,6 @@ exports.listDaysForPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] 
         return aa;
     });
 
-
 exports.listDaysForPersona1 = functions.https.onRequest({ cors: true },
     async (request, res) => {
         console.log(request)
@@ -244,7 +250,7 @@ exports.listDaysForPersona1 = functions.https.onRequest({ cors: true },
                 date: data.date
             });
         });
-        res.set('Content-Type', 'application/json');
+        res.set("Content-Type", "application/json");
         res.status(200).send(JSON.stringify(aa));
     });
 
@@ -265,7 +271,6 @@ exports.listObservations = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
         return aa;
     });
 
-
 exports.listObservations1 = functions.https.onRequest({ cors: true },
     async (request, res) => {
         let aa = [];
@@ -280,7 +285,7 @@ exports.listObservations1 = functions.https.onRequest({ cors: true },
             delete d.personaId;
             aa.push(d);
         });
-        res.set('Content-Type', 'application/json');
+        res.set("Content-Type", "application/json");
         res.status(200).send(JSON.stringify(aa));
     });
 
@@ -293,11 +298,11 @@ async function generateEventsForDay(persona, day, step = 0) {
         date: day.date
     });
     let observations = await callLLM(GEMINI_API_KEY.value(), prompt);
-    //{time: "06:32:13", device: 'watch', type: 'notification', senderApp: 'LocalTube', data: 'train late'},
+    //{time: "06:32:13", device: "watch", type: "notification", senderApp: "LocalTube", data: "train late"},
     observations.forEach(obs => {
         obs.date = day.date;
         obs.personaId = persona.id;
-        db.collection('observations').add(obs);
+        db.collection("observations").add(obs);
     });
     step += 1;
     if (step < day.events.length) {
@@ -307,16 +312,11 @@ async function generateEventsForDay(persona, day, step = 0) {
     }
 }
 
-
-
-
-
-
 // image generation
 async function ___igquery(key, contents) {
     const AI = new GoogleGenAI({ apiKey: key });
     const response = await AI.models.generateContent({
-        model: 'gemini-2.5-flash-image',
+        model: "gemini-3-pro-image-preview",
         contents: contents,
         config: {
             responseModalities: [Modality.TEXT, Modality.IMAGE],
@@ -339,26 +339,25 @@ exports.updateImage = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     });
 
 async function createImageForAgent(id) {
-    const pDoc = db.collection('persona').doc(request.data.id);
+    const pDoc = db.collection("persona").doc(id);
     const pSnapshot = await pDoc.get();
     const persona = pSnapshot.data();
     persona.id = pSnapshot.id;
     const buffer = await ___igquery(GEMINI_API_KEY.value(), personaImagePrompt(persona));
-    const file = await createImageForBucket(buffer, id);
+    const filepath = getImagePath(id);
+    const file = bucket.file(filepath);
+    await file.save(buffer);
+    console.log("SAVED ",file)
     const downloadURL = await getDownloadURL(file);
-    console.log(downloadURL);
-    const r = await pDoc.update({ image: downloadURL });
+    console.log("createImageForAgent "+downloadURL);
+    await pDoc.update({ image: downloadURL });
     return { url: downloadURL };
 }
 
-async function createImageForBucket(buff, root = "member") {
+function getImagePath(bp) {
     const morepath = Math.floor(Math.random() * 10000000000);
-    const filePath = `${root}/${morepath}/pic.jpg`;
-    const file = bucket.file(filePath);
-    await file.save(buff);
-    return file;
+    return `/${bp}/img_${morepath}.jpg`;
 }
-
 
 // create an image for an "app"
 function getAppFilePath(app) {
@@ -376,10 +375,9 @@ exports.createAppImg = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
             console.log(content)
             const buffer = await ___igquery(GEMINI_API_KEY.value(), content);
             await file.save(buffer);
-
             // const data = await sharp(buffer)
             //     .resizeTo(128, 128)
-            //     .toFormat('png')
+            //     .toFormat("png")
             //     .toBuffer();
         }
         const downloadURL = await getDownloadURL(file);
@@ -387,9 +385,32 @@ exports.createAppImg = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     }
 );
 
-exports.createBg1 = functions.https.onRequest({ cors: true, secrets: [GEMINI_API_KEY] },
+
+function sha256(content) {
+  return createHash('sha256').update(content).digest('hex');
+}
+exports.createEditorialImg = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, res) => {
-        const pDoc = db.collection('persona').doc(request.query.id);
+        let prompt = String(request.data.prompt);
+        let filepath = "/editorial-2/"+sha256(prompt)+".jpg";
+        console.log(filepath)
+        const file = bucket.file(filepath);
+        const exists = await file.exists();
+        if (!exists[0]) {
+            let type = "modern michael bartalos like"; // neumorphic glassomorphic rounded glyph 3d cartoon frosted glass etc
+            let content = "Make a "+type+" illustration for: "+prompt+". The illustration should use these colors or complimentary #AB1374 #594FE9 #CA7BFF #6F9BFF ";
+            console.log(content)
+            const buffer = await ___igquery(GEMINI_API_KEY.value(), content);
+            await file.save(buffer);
+        }
+        const downloadURL = await getDownloadURL(file);
+        return { url: downloadURL };
+    }
+);
+
+exports.createBGForPersona = functions.https.onCall({ cors: true, secrets: [GEMINI_API_KEY] },
+    async (request, res) => {
+        const pDoc = db.collection("persona").doc(request.query.id);
         const pSnapshot = await pDoc.get();
         const persona = pSnapshot.data();
         persona.id = pSnapshot.id;
@@ -404,13 +425,11 @@ exports.createBg1 = functions.https.onRequest({ cors: true, secrets: [GEMINI_API
         const buffer = await ___igquery(GEMINI_API_KEY.value(), content);
         const file = await createImageForBucket(buffer, persona.id);
         const downloadURL = await getDownloadURL(file);
-        console.log(downloadURL);
         let updateD = {};
         updateD["imageBG"] = downloadURL;
         const r = await pDoc.update(updateD);
 
-        res.set('Content-Type', 'application/json');
-        res.status(200).send(JSON.stringify({ url: downloadURL }));
+        return { url: downloadURL };
 
     }
 );
@@ -419,7 +438,7 @@ exports.createBg1 = functions.https.onRequest({ cors: true, secrets: [GEMINI_API
 exports.createImg1 = functions.https.onRequest({ secrets: [GEMINI_API_KEY] },
     async (request, res) => {
         // get persona
-        const pDoc = db.collection('persona').doc(request.query.id);
+        const pDoc = db.collection("persona").doc(request.query.id);
         const pSnapshot = await pDoc.get();
         const persona = pSnapshot.data();
         persona.id = pSnapshot.id;
@@ -460,14 +479,12 @@ exports.createImg1 = functions.https.onRequest({ secrets: [GEMINI_API_KEY] },
         updateD["image" + request.query.dayPart] = downloadURL;
         const r = await pDoc.update(updateD);
 
-        res.set('Content-Type', 'application/json');
+        res.set("Content-Type", "application/json");
         res.status(200).send(JSON.stringify({ url: downloadURL }));
-
-
     });
 
 
-const https = require('https');
+const https = require("https");
 async function getUrlBytes(url) {
     return new Promise((resolve, reject) => {
         https.get(url, (response) => {
@@ -476,17 +493,17 @@ async function getUrlBytes(url) {
                 return;
             }
             const chunks = [];
-            response.on('data', (chunk) => {
+            response.on("data", (chunk) => {
                 chunks.push(chunk);
             });
-            response.on('end', () => {
+            response.on("end", () => {
                 const buffer = Buffer.concat(chunks);
                 resolve(buffer);
             });
-            response.on('error', (err) => {
+            response.on("error", (err) => {
                 reject(err);
             });
-        }).on('error', (err) => {
+        }).on("error", (err) => {
             reject(err);
         });
     });
@@ -495,71 +512,103 @@ async function getUrlBytes(url) {
 
 
 /// spaces...
-
+async function getSpaceData(id, date, start, end) {
+ // get persona
+    const pDoc = db.collection("persona").doc(id);
+    const pSnapshot = await pDoc.get();
+    const persona = pSnapshot.data();
+    // collect observations
+    let observations = [];
+    let querySnapshot = await db.collection("observations")
+        .where("personaId", "==", id)
+        .where("date", "==", date)
+        .orderBy("time")
+        .get();
+    let x = 0;
+    querySnapshot.forEach((doc) => {
+        let d = doc.data();
+        d.id = doc.id;
+        delete d.personaId;
+        delete d.date;
+        if (x >= start && x <= end)
+            observations.push(d);
+        x++;
+    });
+    return {persona: persona, observations: observations};
+}
 
 exports.makeSpaceMira = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
-         // get persona
-        const pDoc = db.collection('persona').doc(request.data.id);
-        const pSnapshot = await pDoc.get();
-        const persona = pSnapshot.data();
-        // collect observations
-        let observations = "";
-        let querySnapshot = await db.collection("observations")
-            .where("personaId", "==", request.data.id)
-            .where("date", "==", request.data.date)
-            .orderBy("time")
-            .get();
-        let x = 0;
-        querySnapshot.forEach((doc) => {
-            let d = doc.data();
-            d.id = doc.id;
-            delete d.personaId;
-            delete d.date;
-            if (x >= request.data.start && x <= request.data.end)
-                observations += JSON.stringify(d) + "\n";
-            x++;
-        });
+        let sd = await getSpaceData(request.data.id, request.data.date, request.data.start, request.data.end)
         let prompt = processTemplate(S42_ORGANIZE_AND_TRACK_MIRA, {
-            user: persona.name,
-            observations: observations,
+            user: sd.persona.name,
+            observations: JSON.stringify(sd.observations),
             date: request.data.date
         });
-        console.log(prompt)
         let spaces = await callLLM(GEMINI_API_KEY.value(), prompt);
         return spaces;
     });
 
-
 exports.makeSpacePds = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
-         // get persona
-        const pDoc = db.collection('persona').doc(request.data.id);
-        const pSnapshot = await pDoc.get();
-        const persona = pSnapshot.data();
-        // collect observations
-        let observations = "";
-        let querySnapshot = await db.collection("observations")
-            .where("personaId", "==", request.data.id)
-            .where("date", "==", request.data.date)
-            .orderBy("time")
-            .get();
-        let x = 0;
-        querySnapshot.forEach((doc) => {
-            let d = doc.data();
-            d.id = doc.id;
-            delete d.personaId;
-            delete d.date;
-            if (x >= request.data.start && x <= request.data.end)
-                observations += JSON.stringify(d) + "\n";
-            x++;
-        });
+        let sd = await getSpaceData(request.data.id, request.data.date, request.data.start, request.data.end)
         let prompt = processTemplate(S42_ORGANIZE_AND_TRACK_PDS, {
-            user: persona.name,
-            observations: observations,
+            user: sd.persona.name,
+            observations: JSON.stringify(sd.observations),
             date: request.data.date
         });
-        console.log(prompt)
         let spaces = await callLLM(GEMINI_API_KEY.value(), prompt);
         return spaces;
+    });
+
+exports.makeSpaceBanaux = functions.https.onCall({   timeoutSeconds: 300, secrets: [GEMINI_API_KEY] },
+    async (request, context) => {
+        let sd = await getSpaceData(request.data.id, request.data.date, request.data.start, request.data.end)
+        let prompt = processTemplate(S42_ORGANIZE_AND_TRACK_PDS, {
+            user: sd.persona.name,
+            observations: JSON.stringify(sd.observations),
+            date: request.data.date
+        });
+        let spaces = await callLLM(GEMINI_API_KEY.value(), prompt);
+        console.log(spaces);
+        // banana
+        const content = `
+Make an amazing iOS 26 mobile home screen for this organized information.
+Dont show every word. Only show the subjects and reasons. Only show enough information for me to be informed or know to take action.
+If there are helpful actions, show those. 
+Here is the detailed space info:
+`+JSON.stringify(spaces)+`
+
+The colors and style of the device should be authentic to their vibe.
+The phone should have an amazing background wallpaper image. It should use bright colors and illustration when possible or appropriate.
+It should be hip, modern. Good design. Using whitespace and proportion to help create layout harmony.
+Dont use photography. Dont show people. Make the wallpaper atmospheric or patterned. 
+Here is some info about the user:
+`+ JSON.stringify(sd.persona);
+
+        const buffer = await ___igquery(GEMINI_API_KEY.value(), content);
+        const file = await createImageForBucket(buffer, sd.persona.id);
+        const downloadURL = await getDownloadURL(file);
+        // let updateD = {};
+        // updateD["imageBG"] = downloadURL;
+        // const r = await pDoc.update(updateD);
+
+        return { url: downloadURL };
+    });
+
+
+
+
+    /// html gen
+
+    exports.testHTML = functions.https.onRequest({ secrets: [GEMINI_API_KEY] },
+    async (request, res) => {
+        // let prompt = processTemplate(S2_DAY, {
+        //     user: JSON.stringify(persona),
+        //     date: request.data.date.toString(),
+        //     otherDays: JSON.stringify(otherDays)
+        // });
+        let htmlresponse = await getGemini(GEMINI_API_KEY.value(), P2, "gemini-2.5-pro");
+        console.log(htmlresponse);
+        return htmlresponse;
     });

@@ -4,7 +4,7 @@ import { initNavigation } from "../common/firebasey.js";
 import { PersonaListUI, PersonComponent, TextComponent, Component, Button } from "../common/components.js";
 import { DayTabs, ObservationsView } from "../common/observations.js";
 import { $ } from "../common/util.js";
-import { getPersona, listDaysPersona, listObservations, createDayForPersona, listPersona } from "../common/services.js"
+import { getPersona, listPersona, listDaysPersona, listObservations, createPersona, createPersona2, createDayForPersona } from "../common/services.js"
 
 const LOG1 = false;
 
@@ -20,7 +20,8 @@ initNavigation(user => {
                 break;
             case '/add':
                 createPersona({}).then(results => {
-                    showHome();
+                    console.log(results)
+                    location.href = "persona.html?id="+results.data.id;
                 });
                 break;
             case '/add2':
@@ -30,7 +31,7 @@ initNavigation(user => {
                     gender: urlParams.get('gender'),
                     extra: urlParams.get('extra')
                 }).then(results => {
-                    showHome();
+                    location.href = "persona.html?id="+results.data.id;
                 });
                 break;
             case '/persona.html':
@@ -91,10 +92,10 @@ function displayPersona(id) {
                 if (LOG1) console.log(obs); //
                 dayObsC.clear();
                 let o = new ObservationsView(dayObsC, obs.data);
-                o.jsonButton.addListener("click", e => {
-                    let url = SERVICE_URL + "listObservations1?id=" + id + "&date=" + day.date;
-                    window.open(url, '_blank');
-                });
+                // o.jsonButton.addListener("click", e => {
+                //     let url = SERVICE_URL + "listObservations1?id=" + id + "&date=" + day.date;
+                //     window.open(url, '_blank');
+                // });
             });
         });
 

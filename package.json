@@ -18,6 +18,7 @@
     "firebase-admin": "",
     "firebase-functions": "",
     "javascript-time-ago": "",
+    "node-cache": "^5.1.2",
     "openai": "^6.8.1"
   },
   "repository": {
