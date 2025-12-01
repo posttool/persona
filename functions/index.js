@@ -3,121 +3,33 @@ if (process.env.FUNCTIONS_EMULATOR === "true") {
 }
 
 const functions = require("firebase-functions");
-const { defineSecret } = require("firebase-functions/params");
-
-// const { google } = require("googleapis");
-// const customsearch = google.customsearch("v1");
-const { GoogleGenAI, Modality, createUserContent, createPartFromUri } = require("@google/genai");
-// const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
-// const googleSearchKey = defineSecret("GOOGLE_SEARCH_KEY");
-// const googleVertexKey = defineSecret("GOOGLE_VERTEX_AI_KEY");
-const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
-// const GOOGLE_API_KEY = defineSecret("GOOGLE_API_KEY");
-// const OpenAI = require("openai");
-
-const { createHash } = require( 'node:crypto');
-
-// The Firebase Admin SDK to access Firestore.
 const admin = require("firebase-admin");
+const { defineSecret } = require("firebase-functions/params");
 const { getDownloadURL } = require("firebase-admin/storage");
-admin.initializeApp();
-
-// Only for the server timestamp. 
 const { Firestore } = require("@google-cloud/firestore");
-
-// shortcuts
+admin.initializeApp();
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
 
-function parseJSON(r) {
-    if (r.indexOf("```json") != -1) {
-        json = JSON.parse(r.substring(r.indexOf("```json") + 7, r.length - 4));
-    } else {
-        json = JSON.parse(r);
-    }
-    return json;
-}
-
-// genai functions
-async function getGemini(key, prompt, model="gemini-2.5-flash") {
-    const googleGenAI = new GoogleGenAI({ apiKey: key });
-    const response = await googleGenAI.models.generateContent({
-        model:  model,//gemini-3-pro-preview
-        contents: prompt,
-    });
-    return response.candidates[0].content.parts[0].text;
-}
-
-const llmOfChoice = getGemini;
-const NodeCache = require( "node-cache" );
-const llmCache = new NodeCache();
-
-async function callLLM(key, prompt, c = 0) {
-    if (c < 4) {
-        if (c > 1) {
-            console.log("RETRY " + c);
-        }
-        let r = llmCache.get(prompt);
-        if (r != undefined) 
-            return r;
-        try {
-            let r = await llmOfChoice(key, prompt);
-            let json = parseJSON(r);
-            llmCache.set(prompt, json);
-            return json;
-        } catch (e) {
-            console.log(e);
-            return callLLM(key, prompt, c + 1);
-        }
-    } else {
-        throw new Error("too many retries");
-    }
-}
-
-// async function runStreaming(key, prompt) {
-//     const ai = new GoogleGenAI({ apiKey: key });
-//     const model = "gemini-2.5-flash";
-
-//     console.log("Streaming response:");
-
-//     // Use generateContentStream to get an async iterable
-//     const responseStream = await ai.models.generateContentStream({
-//         model: model,
-//         contents: [{ role: "user", parts: [{ text: prompt }] }],
-//     });
-
-//     // Iterate over the stream chunks
-//     for await (const chunk of responseStream) {
-//         // Print each chunk as it arrives
-//         process.stdout.write(chunk.text);
-//     }
-
-//     console.log(); // New line after the stream ends
-// }
-
-// async function getOpenAI(key, prompt) {
-//     const client = new OpenAI({ apiKey: key });
-
-//     const response = await client.responses.create({
-//         model: "gpt-4o",
-//         input: prompt,
-//     });
-
-//     return response.output_text;
-// }
+const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
+const { GoogleGenAI, Modality, createUserContent, createPartFromUri } = require("@google/genai");
+const { callLLM, processTemplate, parseJSON } = require("./utils.js");
+const { createHash } = require('node:crypto');
 
 const {
-    processTemplate,
     randomPersonaPrompt,
     personaPrompt,
     personaImagePrompt,
     S2_DAY,
-    S3_AMBIENT_OBSERVATIONS,
-    S42_ORGANIZE_AND_TRACK_MIRA,
-    S42_ORGANIZE_AND_TRACK_PDS
-} = require("./persona_prompts.js");
+    S3_AMBIENT_OBSERVATIONS
+} = require("./prompts/persona.js");
 
-const { P2 } = require("./genux_prompts.js");
+const {
+    S42_ORGANIZE_AND_TRACK_MIRA,
+    S42_ORGANIZE_AND_TRACK_PDS 
+} = require("./prompts/organize.js")
+
+const { GENUX_P2 } = require("./prompts/genux-yield.js");
 
 exports.createPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
@@ -143,7 +55,7 @@ exports.createPersona2 = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
         return personaData;
     });
 
-function personaDataResponse1(doc) {
+function personaResponseData(doc) {
     let data = doc.data();
     return {
         id: doc.id,
@@ -159,24 +71,24 @@ function personaDataResponse1(doc) {
 
 exports.listPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
-        let aa = [];
+        let personaResponse = [];
         let querySnapshot = await db.collection("persona").get();
         querySnapshot.forEach((doc) => {
-            aa.push(personaDataResponse1(doc));
+            personaResponse.push(personaResponseData(doc));
         });
-        return aa;
+        return personaResponse;
     });
 
 exports.listPersona1 = functions.https.onRequest({ cors: true },
     async (request, res) => {
-        let aa = [];
+        let personaResponse = [];
         let querySnapshot = await db.collection("persona").get();
         querySnapshot.forEach((doc) => {
-            aa.push(personaDataResponse1(doc));
+            personaResponse.push(personaResponseData(doc));
         });
 
         res.set("Content-Type", "application/json");
-        res.status(200).send(JSON.stringify(aa));
+        res.status(200).send(JSON.stringify(personaResponse));
     });
 
 exports.getPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
@@ -347,9 +259,9 @@ async function createImageForAgent(id) {
     const filepath = getImagePath(id);
     const file = bucket.file(filepath);
     await file.save(buffer);
-    console.log("SAVED ",file)
+    console.log("SAVED ", file)
     const downloadURL = await getDownloadURL(file);
-    console.log("createImageForAgent "+downloadURL);
+    console.log("createImageForAgent " + downloadURL);
     await pDoc.update({ image: downloadURL });
     return { url: downloadURL };
 }
@@ -371,7 +283,7 @@ exports.createAppImg = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
         const exists = await file.exists();
         if (!exists[0]) {
             let type = "rounded glyph"; // neumorphic glassomorphic rounded glyph 3d cartoon frosted glass etc
-            let content = "Make a "+type+" app icon for: "+request.data.app+". It should look exactly like the current app icon for this app or like a familiar icon for this category of app. It should be contained in a circle that extends to each edge of the image. The icon should have contrast and be legible even at small sizes (use positive/negative space instead of keylines).";
+            let content = "Make a " + type + " app icon for: " + request.data.app + ". It should look exactly like the current app icon for this app or like a familiar icon for this category of app. It should be contained in a circle that extends to each edge of the image. The icon should have contrast and be legible even at small sizes (use positive/negative space instead of keylines).";
             console.log(content)
             const buffer = await ___igquery(GEMINI_API_KEY.value(), content);
             await file.save(buffer);
@@ -385,20 +297,19 @@ exports.createAppImg = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     }
 );
 
-
 function sha256(content) {
-  return createHash('sha256').update(content).digest('hex');
+    return createHash('sha256').update(content).digest('hex');
 }
 exports.createEditorialImg = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, res) => {
         let prompt = String(request.data.prompt);
-        let filepath = "/editorial-2/"+sha256(prompt)+".jpg";
+        let filepath = "/editorial-2/" + sha256(prompt) + ".jpg";
         console.log(filepath)
         const file = bucket.file(filepath);
         const exists = await file.exists();
         if (!exists[0]) {
             let type = "modern michael bartalos like"; // neumorphic glassomorphic rounded glyph 3d cartoon frosted glass etc
-            let content = "Make a "+type+" illustration for: "+prompt+". The illustration should use these colors or complimentary #AB1374 #594FE9 #CA7BFF #6F9BFF ";
+            let content = "Make a " + type + " illustration for: " + prompt + ". The illustration should use these colors or complimentary #AB1374 #594FE9 #CA7BFF #6F9BFF ";
             console.log(content)
             const buffer = await ___igquery(GEMINI_API_KEY.value(), content);
             await file.save(buffer);
@@ -416,11 +327,11 @@ exports.createBGForPersona = functions.https.onCall({ cors: true, secrets: [GEMI
         persona.id = pSnapshot.id;
 
         const content = "Make two amazing lock screen and background wallpaper image for this person's mobile phone. " +
-        "Put one for daytime on the left and another for evening on the right. "+
-        "Make sure each wallpaper fills exactly half the canvas and touches and edge or the center line. No borders or matts. Full bleed. Another program will crop the images an expects them to fill the canvas. "+
-        "Dont use photography. Dont show poeple. Make the wallpaer atmospheric or patterned.  "+
-        "Make the image based on the person's hobbies. Be authentic to their vibe.   "+
-        "Person info: " + JSON.stringify(persona);
+            "Put one for daytime on the left and another for evening on the right. " +
+            "Make sure each wallpaper fills exactly half the canvas and touches and edge or the center line. No borders or matts. Full bleed. Another program will crop the images an expects them to fill the canvas. " +
+            "Dont use photography. Dont show poeple. Make the wallpaer atmospheric or patterned.  " +
+            "Make the image based on the person's hobbies. Be authentic to their vibe.   " +
+            "Person info: " + JSON.stringify(persona);
 
         const buffer = await ___igquery(GEMINI_API_KEY.value(), content);
         const file = await createImageForBucket(buffer, persona.id);
@@ -513,7 +424,7 @@ async function getUrlBytes(url) {
 
 /// spaces...
 async function getSpaceData(id, date, start, end) {
- // get persona
+    // get persona
     const pDoc = db.collection("persona").doc(id);
     const pSnapshot = await pDoc.get();
     const persona = pSnapshot.data();
@@ -534,7 +445,7 @@ async function getSpaceData(id, date, start, end) {
             observations.push(d);
         x++;
     });
-    return {persona: persona, observations: observations};
+    return { persona: persona, observations: observations };
 }
 
 exports.makeSpaceMira = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
@@ -561,7 +472,7 @@ exports.makeSpacePds = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
         return spaces;
     });
 
-exports.makeSpaceBanaux = functions.https.onCall({   timeoutSeconds: 300, secrets: [GEMINI_API_KEY] },
+exports.makeSpaceBanaux = functions.https.onCall({ timeoutSeconds: 300, secrets: [GEMINI_API_KEY] },
     async (request, context) => {
         let sd = await getSpaceData(request.data.id, request.data.date, request.data.start, request.data.end)
         let prompt = processTemplate(S42_ORGANIZE_AND_TRACK_PDS, {
@@ -577,7 +488,7 @@ Make an amazing iOS 26 mobile home screen for this organized information.
 Dont show every word. Only show the subjects and reasons. Only show enough information for me to be informed or know to take action.
 If there are helpful actions, show those. 
 Here is the detailed space info:
-`+JSON.stringify(spaces)+`
+`+ JSON.stringify(spaces) + `
 
 The colors and style of the device should be authentic to their vibe.
 The phone should have an amazing background wallpaper image. It should use bright colors and illustration when possible or appropriate.
@@ -599,16 +510,16 @@ Here is some info about the user:
 
 
 
-    /// html gen
+/// html gen
 
-    exports.testHTML = functions.https.onRequest({ secrets: [GEMINI_API_KEY] },
+exports.testHTML = functions.https.onRequest({ secrets: [GEMINI_API_KEY] },
     async (request, res) => {
         // let prompt = processTemplate(S2_DAY, {
         //     user: JSON.stringify(persona),
         //     date: request.data.date.toString(),
         //     otherDays: JSON.stringify(otherDays)
         // });
-        let htmlresponse = await getGemini(GEMINI_API_KEY.value(), P2, "gemini-2.5-pro");
+        let htmlresponse = await getGemini(GEMINI_API_KEY.value(), GENUX_P2, "gemini-2.5-pro");
         console.log(htmlresponse);
         return htmlresponse;
     });

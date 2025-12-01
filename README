@@ -7,7 +7,6 @@ Alternatively, consider using nvm (Node Version Manager).
 ## Firebase
 https://firebase.google.com/docs/cli
 
-
 # Starting the emulator
 firebase emulators:start --import ./exported-data4 --only functions,hosting,firestore
 
@@ -16,7 +15,6 @@ http://localhost:5000
 http://localhost:5000/pds
 http://localhost:5000/mira
 http://localhost:5000/banaux
-
 
 # Important links for managing the published web site
 

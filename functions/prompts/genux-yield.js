@@ -1,4 +1,4 @@
-const P1 = `Given the Agent's current state and a specific Yield Type, generate a detailed prompt for an LLM to create a complete, interactive HTML UI. This UI is intended to serve as a **'Yield-to-User' point** within a side panel of a Gemini Chat interface, allowing the AI Agent to seek **Clarification**, request **Confirmation**, or provide a **Progress Update**. The generated UI MUST be optimized for a narrow, vertical side panel layout and visually align with Google Material 3 principles using ONLY inline styles.
+exports.GENUX_P1 = `Given the Agent's current state and a specific Yield Type, generate a detailed prompt for an LLM to create a complete, interactive HTML UI. This UI is intended to serve as a **'Yield-to-User' point** within a side panel of a Gemini Chat interface, allowing the AI Agent to seek **Clarification**, request **Confirmation**, or provide a **Progress Update**. The generated UI MUST be optimized for a narrow, vertical side panel layout and visually align with Google Material 3 principles using ONLY inline styles.
 
 The generated prompt for the second LLM should clearly ask for:
 A single section labeled "HTML Code:" containing the full, self-contained HTML within a \`\`\`html block.
@@ -120,7 +120,7 @@ Generated LLM Prompt:`;
 
 
 
-exports.P2 = `Generate a interactive HTML UI. 
+exports.GENUX_P2 = `Generate a interactive HTML UI. 
 
 A single section labeled "HTML Code:" containing the full, self-contained HTML within a \`\`\`html block.
 
