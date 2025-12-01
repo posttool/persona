@@ -1,19 +1,5 @@
 import { $, $$ } from "./util.js";
 
-// let FB_CONFIG = null;
-// export function initComponents(config) {
-//     FB_CONFIG = config;
-// }
-// function getStorageUrl(path) {
-//     return FB_CONFIG(path);
-// //   if (!path)
-// //     return '';
-// //   if (path.indexOf('http') == 0)
-// //     return path;
-// //   return 'https://storage.googleapis.com/' + FB_CONFIG.storageBucket + '/' + path;
-// }
-
-
 export class Component {
     constructor(parent = null, options = {}) {
         this.children = [];
@@ -108,13 +94,9 @@ export class Component {
 
 
 export class TextComponent extends Component {
-    constructor(parent, options, data) {
+    constructor(parent, options, data={ text: "" }) {
         super(parent, options);
-        if (data) {
-            this.data = data
-        } else {
-            this.data = { text: "" };
-        };
+        this.data = data;
     }
 
     draw() {
@@ -123,12 +105,12 @@ export class TextComponent extends Component {
         }
     }
 }
+
 export class PersonaListUI extends Component {
     constructor(parent, options) {
         super(parent, { class: "row-container", ...options });
     }
     draw() {
-        // console.log(this._data);
         this.clear();
         this._data.forEach(p => {
             new PersonTile(this, p).click(e => {
@@ -303,102 +285,6 @@ function getObservationString(data) {
     }
     return t;
 }
-// class AMoment extends Component {
-//     constructor(parent, data) {
-//         super(parent, {});
-//         let t = getObservationString(data);
-//         new TextComponent(this, { el: "h2" }, { text: t });
-//         if (data.sender) {
-//             new TextComponent(this, { class: 'big-text' }, { text: data.sender });
-//         }
-//         new TextComponent(this, { class: 'big-text' }, { text: data.data });
-//     }
-// }
-
-
-// export class MomentsContainer extends Component {
-//     constructor(parent, data) {
-//         super(parent);
-//         // let label = new TextComponent(this, {el: "h3"}, {text: event.time+" "+event.description});
-//         this.table = new Component(this, { el: "table" });
-//         if (data)
-//             this.add(data);
-
-//     }
-//     add(deviceMoments) {
-//         deviceMoments.forEach(moment => {
-//             let m = new MomentComponent(this.table, moment);
-//             m.visible(false);
-//         });
-//     }
-//     show(start, count) {
-//         let end = start + count;
-//         this.table.children.forEach((m, idx) => {
-//             m.visible(idx >= start && idx <= end);
-//         })
-//     }
-// }
-// class MomentComponent extends Component {
-//     constructor(parent, data) {
-//         // super(parent, {class: "row-container small-text"});
-//         super(parent, { el: "tr", class: "top-aligned-cell" });
-//         this.time = $$({ parent: this.el, el: "td", class: "small-text" });
-//         // this.deviceIcon = $$({ parent: this.el, el: "td", class: "small-text w100" });
-//         // this.typeIcon = $$({ parent: this.el, el: "td", class: "small-text w100" });
-//         // this.appIcon = $$({ parent: this.el, el: "td", class: "small-text w100" });
-//         this.textInfo = $$({ parent: this.el, el: "td", class: "small-text" });
-//         this.data = data;
-//     }
-
-//     draw() {
-//         if (this._data) {
-//             this.time.innerText = this._data.time
-//             // this.deviceIcon.innerText = this._data.device
-//             // this.typeIcon.innerText = this._data.type;
-//             // this.appIcon.innerText = (this._data.senderApp ? this._data.senderApp : "");
-//            if (this._data.type)
-//                 this.textInfo.classList.add(this._data.type.replaceAll(" ", "-"));
-//             this.textInfo.innerText =
-//                 (this._data.senderApp ? this._data.senderApp + " / " : "") +
-//                 (this._data.sender ? this.data.sender + " : " : "") +
-//                 this._data.data;
-//         }
-//     }
-// }
-
-// class TrackingContainer extends Component {
-//     constructor(parent, organized) {
-//         super(parent);
-//         // let label = new TextComponent(this, {el: "h3"}, {text: event.time+" "+event.description});
-//         this.table = new Component(this, { el: "table" });
-//     }
-//     add(organized) {
-//         organized.forEach(m => {
-//             if (m.shouldTrack)
-//                 new TrackingRow(this.table, m);
-//         });
-//     }
-// }
-
-// class TrackingRow extends Component {
-//     constructor(parent, data) {
-//         // super(parent, {class: "row-container small-text"});
-//         super(parent, { el: "tr", class: "top-aligned-cell" });
-//         this.time = $$({ parent: this.el, el: "td", class: "small-text" });
-//         this.textInfo = $$({ parent: this.el, el: "td", class: "small-text" });
-//         this.trackingInfo = $$({ parent: this.el, el: "td", class: "small-text" });
-//         this.data = data;
-
-//     }
-
-//     draw() {
-//         if (this._data) {
-//             this.time.innerText = this._data.observation.time;
-//             this.textInfo.innerText = (this._data.observation.sender ? this.data.observation.sender + ": " : "") + this._data.observation.data;
-//             this.trackingInfo.innerText = this._data.spaceName + " " + this._data.trackingNextStep + " " + this._data.trackingReason;
-//         }
-//     }
-// }
 
 export class Button extends Component {
     constructor(parent, options={}, data=null) {
@@ -617,8 +503,3 @@ class Answer extends TextComponent {
         }
     }
 }
-
-
-
-
-

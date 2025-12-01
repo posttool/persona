@@ -71,7 +71,6 @@ function showDay(p, persona, day) {
         let spaceBtn = new Button(p, {}, { text: "Generate Space" })
         spaceBtn.addListener("click", e => {
             spaceBtn.visible(false);
-            // const shortObs = obs.slice(obsView.slider.data.min, obsView.slider.data.max);
             makeSpaceMira({
                 id: persona.id,
                 date: day.date,

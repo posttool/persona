@@ -5,17 +5,17 @@ import {
   signInWithPopup,
   signOut
 } from 'firebase/auth';
+
 import { $ } from "./util.js";
+
 import {
     TextComponent, ImageComponent, Component, Button
 } from "./components.js";
-
 
 class ClientLogin extends Component {
   constructor(parent, data) {
     super(parent, { class: "client-login row-container" });
     this.userPic = new ImageComponent(this, { class: "rounded-img" });
-    // this.userName = new TextComponent(this, { class: "padded" });
     this.signInButton = new Button(this, {}, { text: "Sign in" });
     this.signInButton.visible(false);
     this.signOutButton = new Button(this, {}, { text: "Sign out" });
@@ -27,13 +27,10 @@ class ClientLogin extends Component {
     if (this.data) {
       this.userPic.visible(false);
       this.userPic.data = { src: this.data.photoURL };
-      // this.userName.visible(true);
-      // this.userName.data = { text: this.data.displayName };
       this.signInButton.visible(false);
       this.signOutButton.visible(true);
     } else {
       this.userPic.visible(false);
-      // this.userName.visible(false);
       this.signInButton.visible(true);
       this.signOutButton.visible(false);
     }
