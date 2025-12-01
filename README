@@ -1,3 +1,15 @@
+Install
+
+NPM
+Firebase
+
+Start emulator
+firebase emulators:start --import ./exported-data4 --only functions,hosting,firestore
+
+
+
+
+
 Important links
 
 
