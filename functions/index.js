@@ -13,7 +13,7 @@ const bucket = admin.storage().bucket();
 
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 const { GoogleGenAI, Modality, createUserContent, createPartFromUri } = require("@google/genai");
-const { callLLM, processTemplate, parseJSON } = require("./utils.js");
+const { callLLM, getGemini, processTemplate, parseJSON } = require("./utils.js");
 const { createHash } = require('node:crypto');
 
 const {
@@ -224,7 +224,8 @@ async function generateEventsForDay(persona, day, step = 0) {
     }
 }
 
-// image generation
+// image generation ... a bit messy!
+
 async function ___igquery(key, contents) {
     const AI = new GoogleGenAI({ apiKey: key });
     const response = await AI.models.generateContent({
@@ -422,7 +423,8 @@ async function getUrlBytes(url) {
 
 
 
-/// spaces...
+/// space services ... 
+
 async function getSpaceData(id, date, start, end) {
     // get persona
     const pDoc = db.collection("persona").doc(id);

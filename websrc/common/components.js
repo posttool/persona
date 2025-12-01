@@ -139,10 +139,10 @@ export class PersonaListUI extends Component {
 }
 
 class PersonTile extends Component {
-    constructor(parent, p) {
+    constructor(parent, data) {
         super(parent, {});
-        new ImageComponent(this, { class: "rounded" }, {src: p.image});
-        new TextComponent(this, { class: "width-150" }, { text: p.name });
+        new ImageComponent(this, { class: "rounded" }, {src: data.image});
+        new TextComponent(this, { class: "width-150" }, { text: data.name });
     }
 }
 

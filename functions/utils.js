@@ -60,6 +60,7 @@ async function getGemini(key, prompt, model="gemini-2.5-flash") {
     });
     return response.candidates[0].content.parts[0].text;
 }
+exports.getGemini = getGemini;
 
 const llmOfChoice = getGemini;
 const llmCache = new NodeCache();
