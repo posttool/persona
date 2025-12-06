@@ -31,3 +31,7 @@ export const createAppImg = httpsCallable(functions, "createAppImg");
 export const createEditorialImg = httpsCallable(functions, "createEditorialImg");
 export const createBGForPersona = httpsCallable(functions, "createBGForPersona");
 export const makeSpaceBanaux = httpsCallable(functions, "makeSpaceBanaux");
+export const runSimulation = httpsCallable(functions, "runSimulation");
+export const processQueue = httpsCallable(functions, "processQueue");
+export const listUx = httpsCallable(functions, "listUx");
+export const getPersonaWithUx = httpsCallable(functions, "getPersonaWithUx");

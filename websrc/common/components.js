@@ -94,7 +94,7 @@ export class Component {
 
 
 export class TextComponent extends Component {
-    constructor(parent, options, data={ text: "" }) {
+    constructor(parent, options, data = { text: "" }) {
         super(parent, options);
         this.data = data;
     }
@@ -108,29 +108,34 @@ export class TextComponent extends Component {
 
 export class PersonaListUI extends Component {
     constructor(parent, options) {
-        super(parent, { class: "row-container", ...options });
+        super(parent, { class: "persona-list row-container", ...options });
     }
     draw() {
         this.clear();
+        let lastId = null;
         this._data.forEach(p => {
+            lastId = p.name;
             new PersonTile(this, p).click(e => {
                 document.location.href = "/persona.html?id=" + p.id;
             });
-        })
+        });
+        new Button(this, { }, { text: "Next page" }).addListener("click", e => {
+            this.emit("next", lastId);
+        });
     }
 }
 
 class PersonTile extends Component {
     constructor(parent, data) {
         super(parent, {});
-        new ImageComponent(this, { class: "rounded" }, {src: data.image});
+        new ImageComponent(this, { class: "rounded full-bleed", width: "100" }, { src: data.image });
         new TextComponent(this, { class: "width-150" }, { text: data.name });
     }
 }
 
 export class PersonaListUISmall extends Component {
     constructor(parent, options) {
-        super(parent, { class: "row-container wrap", ...options });
+        super(parent, { class: "persona-list-small row-container wrap", ...options });
     }
     draw() {
         this.clear();
@@ -155,7 +160,7 @@ export class PersonComponent extends Component {
     constructor(parent, data) {
         super(parent, {});
         new TextComponent(this, { class: "person", el: "h2" }, { text: data.name + ", " + data.age });
-        new ImageComponent(this, { class: "rounded", width: "400" }, {src: data.image});
+        new ImageComponent(this, { class: "rounded", width: "400" }, { src: data.image });
         new TextComponent(this, { class: "person" }, { text: data.occupation });
         new TextComponent(this, { class: "person" }, { text: data.city });
         new TextComponent(this, { class: "person", el: "h3" }, { text: "Apps & Services" });
@@ -287,7 +292,7 @@ function getObservationString(data) {
 }
 
 export class Button extends Component {
-    constructor(parent, options={}, data=null) {
+    constructor(parent, options = {}, data = null) {
         super(parent, { el: "button", ...options });
         if (data) {
             this.data = data
@@ -295,6 +300,12 @@ export class Button extends Component {
             this.data = { text: "" };
         }
         this.el.addEventListener("click", this._fireChange.bind(this));
+    }
+
+    enabled(b, el = null) {
+        if (el == null)
+            el = this.el;
+        el.disabled = !b;
     }
 
     draw() {
@@ -310,12 +321,12 @@ export class Button extends Component {
 
 
 export class ImageComponent extends Component {
-    constructor(parent, options, data={}) {
+    constructor(parent, options, data = {}) {
         super(parent, { el: "img", ...options });
         this.el.width = options.width ? options.width : "200";
         this.data = data;
     }
-    draw(){
+    draw() {
         if (this.data.src)
             this.el.src = this.data.src;
     }
@@ -331,10 +342,10 @@ export class RangeInput extends Component {
         });
         this.data = data ? data : 0;
     }
-    set max(maxValue){
+    set max(maxValue) {
         this.el.max = maxValue;
     }
-    set min(minValue){
+    set min(minValue) {
         this.el.min = minValue;
     }
     draw() {
@@ -342,7 +353,7 @@ export class RangeInput extends Component {
     }
 }
 
-class Input extends Component {
+export class Input extends Component {
     constructor(parent) {
         super(parent, { el: "input" });
         this.el.addEventListener("change", this._fireChange.bind(this));
@@ -364,11 +375,11 @@ class Input extends Component {
     }
 }
 
-class Select extends Component {
+export class Select extends Component {
     constructor(parent, options) {
         super(parent, { el: "select" });
         this.options = options;
-        for (let i=0; i<options.length; i++) {
+        for (let i = 0; i < options.length; i++) {
             // let o = $$({el: "option", text: options[i]});
             // this.el.addChild(o);
             let o = options[i];
@@ -387,7 +398,7 @@ class Select extends Component {
             this.el.selectedIndex = this._data;
         }
     }
-    _fireChange(e){
+    _fireChange(e) {
         this._data = this.options[this.el.selectedIndex];
         if (this._data.value)
             this._data = this._data.value;

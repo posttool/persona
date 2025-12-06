@@ -1,4 +1,4 @@
-
+const { shuffle, processTemplate } = require("../utils.js");
 
 
 /** making a days */
@@ -121,7 +121,7 @@ Only produce JSON with no extra writing.
 
 /** making the person */
 
-exports.personaImagePrompt = function(person) {
+exports.personaImagePrompt = function (person) {
     return `
 A casual photograph or selfie shot on an phone of the following person.
 
@@ -142,6 +142,7 @@ function getPersonaTemplate() {
     const extra = getPersonalities()[0];
     return [location, age, gender, extra];
 }
+exports.getPersonaTemplate = getPersonaTemplate;
 
 function getAllDemographics() {
     const locations = getCountries()
@@ -160,12 +161,17 @@ function getAllDemographics() {
     return shuffle(demographics);
 }
 
-exports.randomPersonaPrompt = function() {
+exports.randomPersonaPrompt = function () {
     let p = getPersonaTemplate();
     return processTemplate(personaPrompt(p[0], p[1], p[2], p[3]));
 }
 
 function personaPrompt(location, age, gender, extra) {
+    let p = getPersonaTemplate();
+    if (location == null || location == "") location = p[0];
+    if (age == null || age == "") age = p[1];
+    if (gender == null || gender == "") gender = p[2];
+    if (extra == null || extra == "") extra = p[3];
     return `
 Given location age and gender, create a ${extra} persona.
 
@@ -179,6 +185,7 @@ Example output structure:
   name: "",
   age: 0,
   city: "",
+  country: "",
   occupation: ""
   economic_status: ""
   hobbies: [

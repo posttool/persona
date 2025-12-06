@@ -33,8 +33,8 @@ export class SpacesComponent extends Component {
         });
         // this.time.data = { text: maxTime }; // TBD!!!
         let c = new Component(this, { class: "row-container wrap" });
-        if (data.tentativeTodos.length!=0)  
-            new SpaceTodos(c, data.tentativeTodos);
+        // if (data.tentativeTodos.length!=0)  
+        //     new SpaceTodos(c, data.tentativeTodos);
         if (data.tentativeCalendar.length!=0)  
             new SpaceCalendar(c, data.tentativeCalendar);
         let idx = 0;
@@ -92,15 +92,15 @@ class SpaceComponent extends Component {
         this.lastUpdate = -1;
 
         if (space.tracking.expires && space.tracking.expires != "N/A") {
-            new GenerativeImage(this,  "a thematic image of "+space.subject);
+            new GenerativeImage(this, space.subject+" - "+space.tracking.reason);
             new TextComponent(this, { class: "space-pill " }, { text: space.tracking.expires });
-
         }
-        new TextComponent(this, { class: "space-subject" }, { text: space.subject });
-        new TextComponent(this, { class: "space-reason" }, { text: space.tracking.reason });
+        let padded = new Component(this, {class:"padded"})
+        new TextComponent(padded, { class: "space-subject" }, { text: space.subject });
+        new TextComponent(padded, { class: "space-reason" }, { text: space.tracking.reason });
 
          if (space.tracking.actions)
-            new ButtonRow(this, space.tracking.actions);
+            new ButtonRow(padded, space.tracking.actions);
 
 
         //     new TextComponent(this, { class: "pill blue " }, { text: space.relatedObservations.length });

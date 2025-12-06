@@ -15,6 +15,9 @@ const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 const { GoogleGenAI, Modality, createUserContent, createPartFromUri } = require("@google/genai");
 const { callLLM, getGemini, processTemplate, parseJSON } = require("./utils.js");
 const { createHash } = require('node:crypto');
+const path = require('path');
+const { argv, cwd } = require('process');
+
 
 const {
     randomPersonaPrompt,
@@ -26,10 +29,12 @@ const {
 
 const {
     S42_ORGANIZE_AND_TRACK_MIRA,
-    S42_ORGANIZE_AND_TRACK_PDS 
+    S42_ORGANIZE_AND_TRACK_PDS
 } = require("./prompts/organize.js")
 
 const { GENUX_P2 } = require("./prompts/genux-yield.js");
+
+const { BANAUX_P1, BANAUX_P2} = require("./prompts/genux-banaux.js");
 
 exports.createPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
@@ -72,7 +77,11 @@ function personaResponseData(doc) {
 exports.listPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
         let personaResponse = [];
-        let querySnapshot = await db.collection("persona").get();
+        let query = db.collection("persona")
+            .orderBy("name")
+            .startAt(request.data && request.data.startAt ? request.data.startAt : "A")
+            .limit(request.data && request.data.limit ? Number(request.data.limit) : 20);
+        let querySnapshot = await query.get();
         querySnapshot.forEach((doc) => {
             personaResponse.push(personaResponseData(doc));
         });
@@ -91,22 +100,22 @@ exports.listPersona1 = functions.https.onRequest({ cors: true },
         res.status(200).send(JSON.stringify(personaResponse));
     });
 
+async function _getPersona(id) {
+    const pDoc = db.collection("persona").doc(id);
+    const pSnapshot = await pDoc.get();
+    const persona = pSnapshot.data();
+    persona.id = pSnapshot.id;
+    return persona;
+}
 exports.getPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
-        const pDoc = db.collection("persona").doc(request.data.id);
-        const pSnapshot = await pDoc.get();
-        const persona = pSnapshot.data();
-        persona.id = pSnapshot.id;
-        return persona;
+        return await _getPersona(request.data.id);
     });
 
 exports.createDayForPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
         // if ! request.data.id or ! request.data.date throw error
-        const pDoc = db.collection("persona").doc(request.data.id);
-        const pSnapshot = await pDoc.get();
-        const persona = pSnapshot.data();
-        persona.id = pSnapshot.id;
+        const persona = await _getPersona(request.data.id)
         let otherDays = [];
         let querySnapshot = await db.collection("day")
             .where("personaId", "==", request.data.id)
@@ -229,7 +238,7 @@ async function generateEventsForDay(persona, day, step = 0) {
 async function ___igquery(key, contents) {
     const AI = new GoogleGenAI({ apiKey: key });
     const response = await AI.models.generateContent({
-        model: "gemini-3-pro-image-preview",
+        model: "gemini-3-pro-image-preview", // "gemini-2.5-flash-image"
         contents: contents,
         config: {
             responseModalities: [Modality.TEXT, Modality.IMAGE],
@@ -260,7 +269,7 @@ async function createImageForAgent(id) {
     const filepath = getImagePath(id);
     const file = bucket.file(filepath);
     await file.save(buffer);
-    console.log("SAVED ", file)
+    // console.log("SAVED ", file)
     const downloadURL = await getDownloadURL(file);
     console.log("createImageForAgent " + downloadURL);
     await pDoc.update({ image: downloadURL });
@@ -305,12 +314,11 @@ exports.createEditorialImg = functions.https.onCall({ secrets: [GEMINI_API_KEY] 
     async (request, res) => {
         let prompt = String(request.data.prompt);
         let filepath = "/editorial-2/" + sha256(prompt) + ".jpg";
-        console.log(filepath)
+        console.log(filepath);
         const file = bucket.file(filepath);
         const exists = await file.exists();
         if (!exists[0]) {
-            let type = "modern michael bartalos like"; // neumorphic glassomorphic rounded glyph 3d cartoon frosted glass etc
-            let content = "Make a " + type + " illustration for: " + prompt + ". The illustration should use these colors or complimentary #AB1374 #594FE9 #CA7BFF #6F9BFF ";
+            let content = "Make a very simple graphic illustration in the style of Sebastian Curi for: " + prompt + ". ";
             console.log(content)
             const buffer = await ___igquery(GEMINI_API_KEY.value(), content);
             await file.save(buffer);
@@ -335,7 +343,9 @@ exports.createBGForPersona = functions.https.onCall({ cors: true, secrets: [GEMI
             "Person info: " + JSON.stringify(persona);
 
         const buffer = await ___igquery(GEMINI_API_KEY.value(), content);
-        const file = await createImageForBucket(buffer, persona.id);
+        const filepath = getImagePath(persona.id);
+        const file = bucket.file(filepath);
+        file.save(buffer);
         const downloadURL = await getDownloadURL(file);
         let updateD = {};
         updateD["imageBG"] = downloadURL;
@@ -384,7 +394,9 @@ exports.createImg1 = functions.https.onRequest({ secrets: [GEMINI_API_KEY] },
             },
         ];
         const buffer = await ___igquery(GEMINI_API_KEY.value(), content);
-        const file = await createImageForBucket(buffer, persona.id);
+        const filepath = getImagePath(persona.id);
+        const file = bucket.file(filepath);
+        file.save(buffer);
         const downloadURL = await getDownloadURL(file);
         console.log(downloadURL);
         let updateD = {};
@@ -421,11 +433,39 @@ async function getUrlBytes(url) {
     });
 }
 
+const fs = require('fs');
+
+async function getFileBytes(filePath) {
+    return new Promise((resolve, reject) => {
+
+        fs.readFile(filePath, (err, data) => {
+            if (err) {
+                console.error('Error reading file:', err);
+                reject(err);
+                return;
+            }
+
+            // 'data' is a Buffer object containing the file's bytes
+            console.log('File content as Buffer:', data);
+            resolve(data);
+            return;
+
+            // For example, using UTF-8 encoding:
+            const fileContentString = data.toString('utf8');
+            console.log('File content as string (UTF-8):', fileContentString);
+
+            // To get the size of the file in bytes:
+            const fileSizeInBytes = data.length;
+            console.log('File size in bytes:', fileSizeInBytes);
+        });
+    });
+
+}
 
 
 /// space services ... 
 
-async function getSpaceData(id, date, start, end) {
+async function getObservations(id, date, start, end) {
     // get persona
     const pDoc = db.collection("persona").doc(id);
     const pSnapshot = await pDoc.get();
@@ -452,7 +492,7 @@ async function getSpaceData(id, date, start, end) {
 
 exports.makeSpaceMira = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
-        let sd = await getSpaceData(request.data.id, request.data.date, request.data.start, request.data.end)
+        let sd = await getObservations(request.data.id, request.data.date, request.data.start, request.data.end)
         let prompt = processTemplate(S42_ORGANIZE_AND_TRACK_MIRA, {
             user: sd.persona.name,
             observations: JSON.stringify(sd.observations),
@@ -464,7 +504,7 @@ exports.makeSpaceMira = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
 
 exports.makeSpacePds = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
-        let sd = await getSpaceData(request.data.id, request.data.date, request.data.start, request.data.end)
+        let sd = await getObservations(request.data.id, request.data.date, request.data.start, request.data.end)
         let prompt = processTemplate(S42_ORGANIZE_AND_TRACK_PDS, {
             user: sd.persona.name,
             observations: JSON.stringify(sd.observations),
@@ -476,7 +516,7 @@ exports.makeSpacePds = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
 
 exports.makeSpaceBanaux = functions.https.onCall({ timeoutSeconds: 300, secrets: [GEMINI_API_KEY] },
     async (request, context) => {
-        let sd = await getSpaceData(request.data.id, request.data.date, request.data.start, request.data.end)
+        let sd = await getObservations(request.data.id, request.data.date, request.data.start, request.data.end)
         let prompt = processTemplate(S42_ORGANIZE_AND_TRACK_PDS, {
             user: sd.persona.name,
             observations: JSON.stringify(sd.observations),
@@ -484,30 +524,240 @@ exports.makeSpaceBanaux = functions.https.onCall({ timeoutSeconds: 300, secrets:
         });
         let spaces = await callLLM(GEMINI_API_KEY.value(), prompt);
         console.log(spaces);
-        // banana
-        const content = `
-Make an amazing iOS 26 mobile home screen for this organized information.
-Dont show every word. Only show the subjects and reasons. Only show enough information for me to be informed or know to take action.
-If there are helpful actions, show those. 
-Here is the detailed space info:
-`+ JSON.stringify(spaces) + `
 
-The colors and style of the device should be authentic to their vibe.
-The phone should have an amazing background wallpaper image. It should use bright colors and illustration when possible or appropriate.
-It should be hip, modern. Good design. Using whitespace and proportion to help create layout harmony.
-Dont use photography. Dont show people. Make the wallpaper atmospheric or patterned. 
-Here is some info about the user:
-`+ JSON.stringify(sd.persona);
-
-        const buffer = await ___igquery(GEMINI_API_KEY.value(), content);
-        const file = await createImageForBucket(buffer, sd.persona.id);
-        const downloadURL = await getDownloadURL(file);
-        // let updateD = {};
-        // updateD["imageBG"] = downloadURL;
-        // const r = await pDoc.update(updateD);
-
+        let designGuidelinesImg = "mira-image.png";
+        if (request.data.template != "") {
+            designGuidelinesImg = request.data.template;
+        }
+        const downloadURL = await createUXForSpaces(GEMINI_API_KEY, spaces, BANAUX_P2, designGuidelinesImg);
         return { url: downloadURL };
     });
+
+async function createUXForSpaces(GEMINI_API_KEY, spaces, uxPrompt, uxGuidelinesImg) {
+    const bananaPrompt = processTemplate(uxPrompt, { userInfo: JSON.stringify(spaces) });
+    const imgAbsolutePath = path.resolve(cwd(), "res/" + uxGuidelinesImg);
+    let imgBytes = await getFileBytes(imgAbsolutePath);
+    const content = [
+        { text: bananaPrompt },
+        {
+            inlineData: {
+                mimeType: "image/png",
+                data: imgBytes.toString("base64"),
+            },
+        },
+    ];
+    const buffer = await ___igquery(GEMINI_API_KEY.value(), content);
+    const filepath = getImagePath("banaux-seed-1");
+    const file = bucket.file(filepath);
+    await file.save(buffer);
+    const downloadURL = await getDownloadURL(file);
+    return downloadURL;
+}
+
+/// simulation runs
+
+
+exports.runSimulation = functions.https.onCall({ timeoutSeconds: 300, secrets: [GEMINI_API_KEY] },
+    async (request, context) => {
+        runSimulation("test"); //request.data.name
+        return true;
+    });
+
+
+async function runSimulation(name) {
+    let allPersona = await db.collection("persona").orderBy("name").get();
+    allPersona.forEach(async (persona) => {
+        let daysForPersona = await db.collection("day")
+            .where("personaId", "==", persona.id)
+            .orderBy("date")
+            .get();
+        daysForPersona.forEach(async (day) => {
+            let date = day.data().date
+            let col1 = db.collection("observations")
+                .where("personaId", "==", persona.id)
+                .where("date", "==", date);
+            const snapshot = await col1.count().get();
+            let c = snapshot.data().count;
+            if (c > 120) {
+                let testFolder = path.resolve(cwd(), "res/");
+                fs.readdir(testFolder, (err, files) => { // reading the dir is a temporary step to adding the "styles" in the db
+                    files.forEach((file, idx) => {
+                       
+                        let p = BANAUX_P1;
+                        if (idx > 3)   // would be better to associate files with prompts
+                            p = BANAUX_P2;
+                        let props = {
+                            runName: name,
+                            id: persona.id,
+                            date: date,
+                            prompt: p,
+                            imagePrompt: file
+                        };
+                        _queue("generate-screen", {
+                            ...props,
+                            start: 0,
+                            end: c / 3,
+                            dayPart: "a-morning"
+                        });
+                        _queue("generate-screen", { ...props, start: c / 3, end: c * (2 / 3), dayPart: "b-afternoon" });
+                        _queue("generate-screen", { ...props, start: c * (2 / 3), end: c, dayPart: "c-evening" });
+                    });
+                });
+            }
+
+        });
+    });
+
+}
+
+
+
+exports.processQueue = functions.https.onCall({ cors: true, secrets: [GEMINI_API_KEY] },
+    async (request, context) => {
+        _processQ(GEMINI_API_KEY, 8);
+        return true;
+    });
+
+exports.listUx = functions.https.onCall({ cors: true, secrets: [GEMINI_API_KEY] },
+    async (request, context) => {
+
+        console.log(request.data.runName, request.data.id);
+        const uxes = await db.collection('ux')
+            .where("runName", "==", request.data.runName)
+            .where("personaId", "==", request.data.id)
+            .orderBy("data.date")
+            .get();
+
+        let results = [];
+        uxes.forEach(ux => {
+            results.push(ux.data());
+        });
+        return results;
+    });
+
+exports.getPersonaWithUx = functions.https.onCall({ cors: true, secrets: [] },
+    async (request, context) => {
+        const uxes = await db.collection('ux')
+            .where("runName", "==", request.data.runName)
+            .get();
+
+        let results = {};
+        uxes.forEach((ux) => {
+            let key = ux.data().personaId;
+            if (!(key in results)) {
+                results[key] = true;//await _getPersona(key);
+            }
+        });
+        for (const p in results) {
+            results[p] = await _getPersona(p);
+        }
+        return results;
+    });
+
+// exports.scheduledFunction = functions
+//     .runWith({ secrets: [GEMINI_API_KEY] })
+//     .pubsub.schedule('* * * * *').onRun((context) => {
+//         functions.logger.info('On the minute * * * * * !');
+//         return _processQ();
+//     });
+
+async function _queue(fname, data) {
+    let doc = {
+        fname: fname,
+        data: data,
+        state: 'init',
+        created: Firestore.FieldValue.serverTimestamp()
+    };
+    return await db.collection('service-queue').add(doc);
+}
+
+async function _processQ(GEMINI_API_KEY, batchSize = 8) {
+    const qItems = await db.collection('service-queue')
+        .where('state', '==', 'init')
+        .orderBy('created', 'asc')
+        .limit(batchSize).get();
+    qItems.forEach(async qItem => {
+        try {
+            qItem.ref.update({ state: 'processing' });
+            await _processRequest(GEMINI_API_KEY, qItem.data());
+            qItem.ref.update({ state: 'complete' });
+        }
+        catch (err) {
+            qItem.ref.update({ state: 'error', errorMessage: err.message });
+            console.error(err);
+        }
+    });
+}
+
+
+async function _processRequest(GEMINI_API_KEY, r) {
+    console.log(' ** process request ' + r.fname);
+    switch (r.fname) {
+        case 'generate-screen':
+            return await generateScreen(GEMINI_API_KEY, r.data);
+        case 'generate-observations':
+            return await addResponse(r.data.agent, r.data.intro);
+    }
+}
+
+
+
+async function generateScreen(GEMINI_API_KEY, data) {
+    let sd = await getObservations(data.id, data.date, data.start, data.end);
+    // let sd = await getObservations(request.data.id, request.data.date, request.data.start, request.data.end)
+    let prompt = processTemplate(S42_ORGANIZE_AND_TRACK_PDS, {
+        user: sd.persona.name,
+        observations: JSON.stringify(sd.observations),
+        date: data.date
+    });
+    console.log("getting space")
+    let spaces = await callLLM(GEMINI_API_KEY.value(), prompt);
+    console.log("got space, getting image")
+    let url = await createUXForSpaces(GEMINI_API_KEY, spaces, data.prompt, data.imagePrompt);
+    console.log("got image " + url)
+    await db.collection('ux').add({
+        runName: data.runName,
+        personaId: data.id,
+        url: url,
+        data: data,
+    });
+}
+
+// getContext(agent.culture, {
+//     agent_intro: agent.priming[0]
+// }).then(ctx => {
+//     console.log('  add intro agent ' + agent.name);
+//     var c = new chain.Chain(agent.priming[1], agent.temperature, ctx, services);
+//     c.execute().then(result => {
+//         if (!c.lastResult) {
+//             console.log('error?');
+//             console.log(c.logs)
+//             reject();
+//             return;
+//         }
+//         // create a response and add it
+//         const data = {
+//             created: Firestore.FieldValue.serverTimestamp(),
+//             updated: Firestore.FieldValue.serverTimestamp(),
+//             state: 'public',
+//             member: 'member/' + agent.id,
+//             culture: agent.culture,
+//             text: c.lastResult,
+//             log: c.log,
+//             stats: {
+//                 adopted: 0,
+//                 rejected: 0
+//             }
+//         };
+//         // a sub collection in the introduction
+//         const res = db
+//             .collection('introduction')
+//             .add(data);
+//         res.then(doc => {
+//             resolve(doc)
+//         })
+//     });
+// });
 
 
 

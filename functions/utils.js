@@ -14,9 +14,12 @@ function shuffle(array) {
   }
   return array;
 }
+exports.shuffle = shuffle;
+
 function random(a) {
     return Math.floor(Math.random() * a);
 }
+exports.random = random;
 
 function oneOf(array) {
     if (array && array.length != 0)
@@ -24,6 +27,7 @@ function oneOf(array) {
     else
         return {};
 }
+exports.oneOf = oneOf;
 
 function getByName(array, name) {
     for (var i = 0; i < array.length; i++) {

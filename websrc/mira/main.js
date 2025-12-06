@@ -1,10 +1,9 @@
 "use strict";
 
-// import { initNavigation } from "../common/firebasey.js";
+import { $ } from "../common/util.js";
 import { PersonaListUISmall, PersonComponentSmall, Component, Button } from "../common/components.js";
 import { DayTabsSmall, ObservationsView } from "../common/observations.js";
-import { $ } from "../common/util.js";
-import { listDaysPersona, listObservations, makeSpaceMira, listPersona } from "../common/services.js"
+import { listDaysPersona, listObservations, listPersona, makeSpaceMira } from "../common/services.js"
 import { SpacesComponent } from "./spaces.js"
 
 const LOG1 = true;

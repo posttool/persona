@@ -66,7 +66,7 @@
 #spaces .space {
     position: relative;
     width: 100%;
-    padding: 18px;
+    padding: 0;
     /* background: radial-gradient(94.71% 208.72% at 82.74% -9.98%, var(--primary-primary-fixed-dim-pfd, #578CFF) 0%, var(--secondary-secondary-fixed-dim-qfd, #A9B4FF) 97.94%); */
     border-radius: 36px;
     background: var(--android-only-se-0-se-0, rgba(217, 226, 255, 0.50));
@@ -78,21 +78,26 @@
     background: #DFF2EB88;
 }
 
+#spaces .space .padded {
+    padding: 18px;
+}
+
 .space-pill {
-position: relative;
+    position: relative;
 
-border-radius: 360px;
-background: var(--surfaces-surface-container-scx, #E6E6FF);
+    border-radius: 360px;
+    background: var(--surfaces-surface-container-scx, #E6E6FF);
 
-color: var(--surfaces-on-surface-os, #232D67);
+    color: var(--surfaces-on-surface-os, #232D67);
 
-/* Title/Medium/Emphasized */
-font-family: var(--Variable-Title-Medium-Font, "Google Sans Flex");
-font-size: var(--Font-Title-Medium, 16px);
-font-style: normal;
-font-weight: 600;
-line-height: var(--Line-height-Title-Medium, 24px); /* 150% */
-letter-spacing: var(--Variable-Title-Medium-Tracking, 0);
+    /* Title/Medium/Emphasized */
+    font-family: var(--Variable-Title-Medium-Font, "Google Sans Flex");
+    font-size: var(--Font-Title-Medium, 16px);
+    font-style: normal;
+    font-weight: 600;
+    line-height: var(--Line-height-Title-Medium, 24px);
+    /* 150% */
+    letter-spacing: var(--Variable-Title-Medium-Tracking, 0);
 }
 
 .space-subject {
@@ -374,6 +379,7 @@ letter-spacing: var(--Variable-Title-Medium-Tracking, 0);
     font-size: 14px;
     font-style: normal;
     font-weight: 700;
-    line-height: 120%; /* 16.8px */
+    line-height: 120%;
+    /* 16.8px */
     text-wrap: nowrap;
 }

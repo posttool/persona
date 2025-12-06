@@ -60,7 +60,7 @@ export class ObservationsView extends Component {
 
 class FilterOptions extends Component {
     constructor(parent, data) {
-        super(parent, { class: "row-container" });
+        super(parent, { class: "row-container small-gap" });
         let map = {}
         data.forEach(obs => {
             map[obs.type] = true;

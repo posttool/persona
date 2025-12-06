@@ -1,7 +1,7 @@
 "use strict";
 
 // import { initNavigation } from "../common/firebasey.js";
-import { PersonaListUISmall, PersonComponentSmall, Component, Button, ImageComponent } from "../common/components.js";
+import { PersonaListUISmall, PersonComponentSmall, Component, Button, ImageComponent, Select } from "../common/components.js";
 import { DayTabsSmall, ObservationsView } from "../common/observations.js";
 import { $ } from "../common/util.js";
 import { listDaysPersona, listObservations, listPersona, makeSpaceBanaux } from "../common/services.js"
@@ -26,7 +26,7 @@ document.fonts.ready.then(() => {
 });
 
 function doListPersona() {
-    listPersona().then(results => {
+    listPersona({limit: 50}).then(results => {
         if (LOG1) console.log(results)
         let personaList = new PersonaListUISmall(controls);
         personaList.data = results.data;
@@ -54,16 +54,7 @@ function doListPersona() {
 
 let lastObsView = null;
 function showDay(p, persona, day) {
-    if (persona.imageBG) {
-        let bg = new Image();
-        // bg.crossOrigin = 'anonymous';
-        bg.src = persona.imageBG;
-        bg.onload = () => {
-            $("phoneBg").style.backgroundImage = "url(" + persona.imageBG + ")";
-            // let x = colorThief.getPalette(bg);
-            // console.log(x);
-        }
-    }
+    
     listObservations({ id: persona.id, date: day.date }).then(obs => {
         obs = obs.data;
         if (lastObsView) lastObsView.remove();
@@ -72,17 +63,21 @@ function showDay(p, persona, day) {
         let obsView = new ObservationsView(p, obs);
         lastObsView = obsView;
         let spaceBtn = new Button(p, {}, { text: "Generate Space" })
+        let select = new Select(p, ["pds-1.png", "mira-image.png", "mira-visd.png", "mira-visd-1.png", 
+            "mira-visd-2.png", "mira-system-1.png", "kiki.png", "1818.png", 
+            "gemspace-1.png", "gemspace-2.png", "subzero-1.png"]);
         spaceBtn.addListener("click", e => {
             $("spaces").innerText = "";
-            spaceBtn.visible(false);
+            spaceBtn.enabled(false);
             // const shortObs = obs.slice(obsView.slider.data.min, obsView.slider.data.max);
             makeSpaceBanaux({
                 id: persona.id,
                 date: day.date,
                 start: obsView.slider.data.min,
-                end: obsView.slider.data.max
+                end: obsView.slider.data.max,
+                template: select.data
             }).then(r => {
-                spaceBtn.visible(true);
+                spaceBtn.enabled(true);
                 console.log(r)
                 new ImageComponent($("spaces"), {}, {src: r.data.url})
             });
