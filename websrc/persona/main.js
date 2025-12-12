@@ -6,7 +6,7 @@ import { DayTabs, ObservationsView } from "../common/observations.js";
 import { $, $$ } from "../common/util.js";
 import {
     getPersona, listPersona, listDaysPersona, listObservations, createPersona,
-    createPersona2, createDayForPersona, runSimulation, processQueue, listUx, getPersonaWithUx
+    createPersona2, createDayForPersona, runSimulation, processQueue, getPersonaWithUx, makePdf
 } from "../common/services.js"
 
 const LOG1 = false;
@@ -48,6 +48,11 @@ initNavigation(user => {
             case '/q':
                 processQueue().then(e => {
                     location.href = "/";
+                });
+                break;
+            case '/pdf':
+                makePdf({runName: "test"}).then(e => {
+                    console.log(e);
                 });
                 break;
             case '/ux':

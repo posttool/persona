@@ -35,3 +35,4 @@ export const runSimulation = httpsCallable(functions, "runSimulation");
 export const processQueue = httpsCallable(functions, "processQueue");
 export const listUx = httpsCallable(functions, "listUx");
 export const getPersonaWithUx = httpsCallable(functions, "getPersonaWithUx");
+export const makePdf = httpsCallable(functions, "makePdf");

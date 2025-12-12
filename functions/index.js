@@ -17,6 +17,7 @@ const { callLLM, getGemini, processTemplate, parseJSON } = require("./utils.js")
 const { createHash } = require('node:crypto');
 const path = require('path');
 const { argv, cwd } = require('process');
+const PDFDocument = require('pdfkit');
 
 
 const {
@@ -34,7 +35,7 @@ const {
 
 const { GENUX_P2 } = require("./prompts/genux-yield.js");
 
-const { BANAUX_P1, BANAUX_P2} = require("./prompts/genux-banaux.js");
+const { BANAUX_P1, BANAUX_P2 } = require("./prompts/genux-banaux.js");
 
 exports.createPersona = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
     async (request, context) => {
@@ -556,7 +557,6 @@ async function createUXForSpaces(GEMINI_API_KEY, spaces, uxPrompt, uxGuidelinesI
 
 /// simulation runs
 
-
 exports.runSimulation = functions.https.onCall({ timeoutSeconds: 300, secrets: [GEMINI_API_KEY] },
     async (request, context) => {
         runSimulation("test"); //request.data.name
@@ -582,7 +582,7 @@ async function runSimulation(name) {
                 let testFolder = path.resolve(cwd(), "res/");
                 fs.readdir(testFolder, (err, files) => { // reading the dir is a temporary step to adding the "styles" in the db
                     files.forEach((file, idx) => {
-                       
+
                         let p = BANAUX_P1;
                         if (idx > 3)   // would be better to associate files with prompts
                             p = BANAUX_P2;
@@ -620,7 +620,6 @@ exports.processQueue = functions.https.onCall({ cors: true, secrets: [GEMINI_API
 
 exports.listUx = functions.https.onCall({ cors: true, secrets: [GEMINI_API_KEY] },
     async (request, context) => {
-
         console.log(request.data.runName, request.data.id);
         const uxes = await db.collection('ux')
             .where("runName", "==", request.data.runName)
@@ -635,25 +634,157 @@ exports.listUx = functions.https.onCall({ cors: true, secrets: [GEMINI_API_KEY] 
         return results;
     });
 
+async function _getPersonaWithUx(runName) {
+    const uxes = await db.collection('ux')
+        .where("runName", "==", runName)
+        .get();
+
+    let results = {};
+    uxes.forEach((ux) => { // even if marked async, await does not work
+        let key = ux.data().personaId;
+        if (!(key in results)) {
+            results[key] = true;
+        }
+    });
+    for (const p in results) { // await works with "in"
+        results[p] = await _getPersona(p);
+    }
+    return results;
+}
 exports.getPersonaWithUx = functions.https.onCall({ cors: true, secrets: [] },
     async (request, context) => {
-        const uxes = await db.collection('ux')
-            .where("runName", "==", request.data.runName)
-            .get();
-
-        let results = {};
-        uxes.forEach((ux) => {
-            let key = ux.data().personaId;
-            if (!(key in results)) {
-                results[key] = true;//await _getPersona(key);
-            }
-        });
-        for (const p in results) {
-            results[p] = await _getPersona(p);
-        }
-        return results;
+        return await _getPersonaWithUx(request.data.runName);
     });
 
+
+async function loadCustomFont(doc) {
+    const fontUrl = 'https://example.com/fonts/OpenSans-Regular.ttf'; // Use the correct font format (TTF, OTF, WOFF, WOFF2)
+    try {
+        const response = await fetch(fontUrl);
+        const fontArrayBuffer = await response.arrayBuffer();
+        doc.font(fontArrayBuffer, 'OpenSans-Regular', 12);
+        doc.text('Text with custom font!', 100, 100);
+    } catch (error) {
+        console.error('Error loading font:', error);
+    }
+}
+exports.makePdf = functions.https.onCall({ cors: true, secrets: [] },
+    async (request, context) => {
+        const doc = new PDFDocument({ layout: "landscape" });
+        const buffers = [];
+        doc.on('data', buffers.push.bind(buffers));
+        doc.on('end', async () => {
+            const pdfBuffer = Buffer.concat(buffers);
+            const morepath = Math.floor(Math.random() * 10000000000);
+            const file = bucket.file("pdf/" + request.data.runName + "/" + morepath + ".pdf");
+            console.log("saving " + file + " maybe")
+            await file.save(pdfBuffer);
+            const downloadURL = await getDownloadURL(file);
+            console.log(downloadURL); // TODO put in db "ux-reports"
+        });
+        doc
+            .fontSize(50)
+            .text("All persona batch")
+            .fontSize(25)
+            .text("Run name: " + request.data.runName)
+            .fontSize(12)
+            .text((new Date()).toString());
+        // date
+
+        let persona = await _getPersonaWithUx(request.data.runName);
+        for (const personaId in persona) {
+            let p = persona[personaId];
+            doc
+                .addPage()
+                .fontSize(25)
+                .font('Helvetica-Bold')
+                .text(p.name)
+                .font('Helvetica');
+
+            let personBuf = await getUrlBytes(p.image);
+            doc.image(personBuf, { width: 300 });
+
+
+            // gather their ux's
+            const uxes = await db.collection('ux')
+                .where("runName", "==", request.data.runName)
+                .where("personaId", "==", personaId)
+                .orderBy("data.date")
+                .get();
+
+            let uxResults = [];
+            let dates = {};
+            uxes.forEach(ux => {
+                ux = ux.data();
+                uxResults.push(ux);
+                dates[ux.data.date] = true;
+            });
+
+            // more info about the day(s)
+            for (const date in dates) {
+                doc
+                    .addPage()
+                    .fontSize(25)
+                    .font('Helvetica-Bold')
+                    .text(date)
+                    .fontSize(9)
+                    .font('Helvetica');
+                let daysSnap = await db.collection("day")
+                    .where("personaId", "==", personaId)
+                    .where("date", "==", date)
+                    .get();
+                daysSnap.forEach((day) => {
+                    day.data().events.forEach(event => {
+                        doc.text(event.time + " " + event.description);
+                    })
+                });
+                doc.text("Detailed Observations");
+                let obsSnap = await db.collection("observations")
+                    .where("personaId", "==", personaId)
+                    .where("date", "==", date)
+                    .orderBy("time")
+                    .get();
+
+                let table = doc
+                    .fontSize(7)
+                    .table({
+                        rowStyles: { border: false },
+                        columnStyles: [50, 50, 50, 50, 50, "*"],
+                    });
+                obsSnap.forEach((obs) => {
+                    obs = obs.data();
+                    table.row([obs.time, obs.device, obs.type, obs.senderApp, obs.sender, obs.data]);
+                });
+            }
+
+            uxResults.sort((a, b) => {
+                let akey = a.data.imagePrompt + "-" + a.data.date + "-" + a.data.dayPart;
+                let bkey = b.data.imagePrompt + "-" + b.data.date + "-" + b.data.dayPart;
+                if (akey < bkey) {
+                    return -1;
+                }
+                if (akey > bkey) {
+                    return 1;
+                }
+                return 0;
+            });
+            for (const i in uxResults) {
+                const ux = uxResults[i];
+                doc
+                    .addPage()
+                    .fontSize(25)
+                    .text(ux.data.date + " " + ux.data.dayPart)
+                    .fontSize(12)
+                    .text(ux.data.imagePrompt);
+
+                let uxBuf = await getUrlBytes(ux.url);
+                doc.image(uxBuf, { width: 600 });
+            }
+
+        }
+        doc.end();
+
+    });
 // exports.scheduledFunction = functions
 //     .runWith({ secrets: [GEMINI_API_KEY] })
 //     .pubsub.schedule('* * * * *').onRun((context) => {
@@ -675,8 +806,9 @@ async function _processQ(GEMINI_API_KEY, batchSize = 8) {
     const qItems = await db.collection('service-queue')
         .where('state', '==', 'init')
         .orderBy('created', 'asc')
-        .limit(batchSize).get();
-    qItems.forEach(async qItem => {
+        .limit(batchSize)
+        .get();
+    qItems.forEach(async qItem => { // TODO async doesnt work here :)
         try {
             qItem.ref.update({ state: 'processing' });
             await _processRequest(GEMINI_API_KEY, qItem.data());
@@ -689,7 +821,6 @@ async function _processQ(GEMINI_API_KEY, batchSize = 8) {
     });
 }
 
-
 async function _processRequest(GEMINI_API_KEY, r) {
     console.log(' ** process request ' + r.fname);
     switch (r.fname) {
@@ -699,8 +830,6 @@ async function _processRequest(GEMINI_API_KEY, r) {
             return await addResponse(r.data.agent, r.data.intro);
     }
 }
-
-
 
 async function generateScreen(GEMINI_API_KEY, data) {
     let sd = await getObservations(data.id, data.date, data.start, data.end);
@@ -722,44 +851,6 @@ async function generateScreen(GEMINI_API_KEY, data) {
         data: data,
     });
 }
-
-// getContext(agent.culture, {
-//     agent_intro: agent.priming[0]
-// }).then(ctx => {
-//     console.log('  add intro agent ' + agent.name);
-//     var c = new chain.Chain(agent.priming[1], agent.temperature, ctx, services);
-//     c.execute().then(result => {
-//         if (!c.lastResult) {
-//             console.log('error?');
-//             console.log(c.logs)
-//             reject();
-//             return;
-//         }
-//         // create a response and add it
-//         const data = {
-//             created: Firestore.FieldValue.serverTimestamp(),
-//             updated: Firestore.FieldValue.serverTimestamp(),
-//             state: 'public',
-//             member: 'member/' + agent.id,
-//             culture: agent.culture,
-//             text: c.lastResult,
-//             log: c.log,
-//             stats: {
-//                 adopted: 0,
-//                 rejected: 0
-//             }
-//         };
-//         // a sub collection in the introduction
-//         const res = db
-//             .collection('introduction')
-//             .add(data);
-//         res.then(doc => {
-//             resolve(doc)
-//         })
-//     });
-// });
-
-
 
 
 /// html gen

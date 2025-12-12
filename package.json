@@ -19,7 +19,8 @@
     "firebase-functions": "",
     "javascript-time-ago": "",
     "node-cache": "^5.1.2",
-    "openai": "^6.8.1"
+    "openai": "^6.8.1",
+    "pdfkit": "^0.17.2"
   },
   "repository": {
     "type": "git",
