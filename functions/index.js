@@ -682,107 +682,112 @@ exports.makePdf = functions.https.onCall({ cors: true, secrets: [] },
             const downloadURL = await getDownloadURL(file);
             console.log(downloadURL); // TODO put in db "ux-reports"
         });
-        doc
-            .fontSize(50)
-            .text("All persona batch")
-            .fontSize(25)
-            .text("Run name: " + request.data.runName)
-            .fontSize(12)
-            .text((new Date()).toString());
-        // date
 
-        let persona = await _getPersonaWithUx(request.data.runName);
-        for (const personaId in persona) {
-            let p = persona[personaId];
+        async function makeDoc() {
             doc
-                .addPage()
+                .fontSize(50)
+                .text("All persona batch")
                 .fontSize(25)
-                .font('Helvetica-Bold')
-                .text(p.name)
-                .font('Helvetica');
+                .text("Run name: " + request.data.runName)
+                .fontSize(12)
+                .text((new Date()).toString());
+            // date
 
-            let personBuf = await getUrlBytes(p.image);
-            doc.image(personBuf, { width: 300 });
-
-
-            // gather their ux's
-            const uxes = await db.collection('ux')
-                .where("runName", "==", request.data.runName)
-                .where("personaId", "==", personaId)
-                .orderBy("data.date")
-                .get();
-
-            let uxResults = [];
-            let dates = {};
-            uxes.forEach(ux => {
-                ux = ux.data();
-                uxResults.push(ux);
-                dates[ux.data.date] = true;
-            });
-
-            // more info about the day(s)
-            for (const date in dates) {
+            let persona = await _getPersonaWithUx(request.data.runName);
+            for (const personaId in persona) {
+                let p = persona[personaId];
                 doc
                     .addPage()
                     .fontSize(25)
                     .font('Helvetica-Bold')
-                    .text(date)
-                    .fontSize(9)
+                    .text(p.name)
                     .font('Helvetica');
-                let daysSnap = await db.collection("day")
+
+                let personBuf = await getUrlBytes(p.image);
+                doc.image(personBuf, { width: 300 });
+
+
+                // gather their ux's
+                const uxes = await db.collection('ux')
+                    .where("runName", "==", request.data.runName)
                     .where("personaId", "==", personaId)
-                    .where("date", "==", date)
-                    .get();
-                daysSnap.forEach((day) => {
-                    day.data().events.forEach(event => {
-                        doc.text(event.time + " " + event.description);
-                    })
-                });
-                doc.text("Detailed Observations");
-                let obsSnap = await db.collection("observations")
-                    .where("personaId", "==", personaId)
-                    .where("date", "==", date)
-                    .orderBy("time")
+                    .orderBy("data.date")
                     .get();
 
-                let table = doc
-                    .fontSize(7)
-                    .table({
-                        rowStyles: { border: false },
-                        columnStyles: [50, 50, 50, 50, 50, "*"],
+                let uxResults = [];
+                let dates = {};
+                uxes.forEach(ux => {
+                    ux = ux.data();
+                    uxResults.push(ux);
+                    dates[ux.data.date] = true;
+                });
+
+                // more info about the day(s)
+                for (const date in dates) {
+                    doc
+                        .addPage()
+                        .fontSize(25)
+                        .font('Helvetica-Bold')
+                        .text(date)
+                        .fontSize(9)
+                        .font('Helvetica');
+                    let daysSnap = await db.collection("day")
+                        .where("personaId", "==", personaId)
+                        .where("date", "==", date)
+                        .get();
+                    daysSnap.forEach((day) => {
+                        day.data().events.forEach(event => {
+                            doc.text(event.time + " " + event.description);
+                        })
                     });
-                obsSnap.forEach((obs) => {
-                    obs = obs.data();
-                    table.row([obs.time, obs.device, obs.type, obs.senderApp, obs.sender, obs.data]);
+                    doc.text("Detailed Observations");
+                    let obsSnap = await db.collection("observations")
+                        .where("personaId", "==", personaId)
+                        .where("date", "==", date)
+                        .orderBy("time")
+                        .get();
+
+                    let table = doc
+                        .fontSize(7)
+                        .table({
+                            rowStyles: { border: false },
+                            columnStyles: [50, 50, 50, 50, 50, "*"],
+                        });
+                    obsSnap.forEach((obs) => {
+                        obs = obs.data();
+                        table.row([obs.time, obs.device, obs.type, obs.senderApp, obs.sender, obs.data]);
+                    });
+                }
+
+                uxResults.sort((a, b) => {
+                    let akey = a.data.imagePrompt + "-" + a.data.date + "-" + a.data.dayPart;
+                    let bkey = b.data.imagePrompt + "-" + b.data.date + "-" + b.data.dayPart;
+                    if (akey < bkey) {
+                        return -1;
+                    }
+                    if (akey > bkey) {
+                        return 1;
+                    }
+                    return 0;
                 });
-            }
+                for (const i in uxResults) {
+                    const ux = uxResults[i];
+                    doc
+                        .addPage()
+                        .fontSize(25)
+                        .text(ux.data.date + " " + ux.data.dayPart)
+                        .fontSize(12)
+                        .text(ux.data.imagePrompt);
 
-            uxResults.sort((a, b) => {
-                let akey = a.data.imagePrompt + "-" + a.data.date + "-" + a.data.dayPart;
-                let bkey = b.data.imagePrompt + "-" + b.data.date + "-" + b.data.dayPart;
-                if (akey < bkey) {
-                    return -1;
+                    let uxBuf = await getUrlBytes(ux.url);
+                    doc.image(uxBuf, { width: 600 });
                 }
-                if (akey > bkey) {
-                    return 1;
-                }
-                return 0;
-            });
-            for (const i in uxResults) {
-                const ux = uxResults[i];
-                doc
-                    .addPage()
-                    .fontSize(25)
-                    .text(ux.data.date + " " + ux.data.dayPart)
-                    .fontSize(12)
-                    .text(ux.data.imagePrompt);
 
-                let uxBuf = await getUrlBytes(ux.url);
-                doc.image(uxBuf, { width: 600 });
             }
-
+            doc.end();
         }
-        doc.end();
+        makeDoc();
+        return "working...";
 
     });
 // exports.scheduledFunction = functions
