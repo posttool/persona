@@ -1,12 +1,15 @@
 "use strict";
 
 import { initNavigation } from "../common/firebasey.js";
-import { PersonaListUI, PersonComponent, TextComponent, Component, Button, Select, Input, ImageComponent } from "../common/components.js";
+import { $ } from "../common/util.js";
+import {
+    PersonaListUI, PersonComponent, TextComponent, Component, Button,
+    Select, Input, DateInput, TextArea, ImageComponent
+} from "../common/components.js";
 import { DayTabs, ObservationsView } from "../common/observations.js";
-import { $, $$ } from "../common/util.js";
 import {
     getPersona, listPersona, listDaysPersona, listObservations, createPersona,
-    createPersona2, createDayForPersona, runSimulation, processQueue, getPersonaWithUx, makePdf
+    createPersona2, runSimulation, runSimulationForAll, processQueue
 } from "../common/services.js"
 
 const LOG1 = false;
@@ -40,32 +43,30 @@ initNavigation(user => {
             case '/persona.html':
                 displayPersona(urlParams.get('id'));
                 break;
-            case '/sim':
-                runSimulation().then(e => {
-                    location.href = "/";
-                });
+            case '/settings':
+                displaySettings(user);
                 break;
             case '/q':
                 processQueue().then(e => {
                     location.href = "/";
                 });
                 break;
-            case '/pdf':
-                makePdf({runName: "test"}).then(e => {
-                    console.log(e);
-                });
-                break;
-            case '/ux':
-                getPersonaWithUx({runName: "test"}).then(e => {
-                    console.log(e);
-                    let personaList = new PersonaListUI($("root"));
-                    let l = [];
-                    for (const p in e.data) {
-                        l.push(e.data[p]);
-                    }
-                    personaList.data = l;
-               });
-                break;
+            // case '/pdf':
+            //     makePdf({ runName: "test" }).then(e => {
+            //         console.log(e);
+            //     });
+            //     break;
+            // case '/ux':
+            //     getPersonaWithUx({ runName: "test" }).then(e => {
+            //         console.log(e);
+            //         let personaList = new PersonaListUI($("root"));
+            //         let l = [];
+            //         for (const p in e.data) {
+            //             l.push(e.data[p]);
+            //         }
+            //         personaList.data = l;
+            //     });
+            //     break;
 
         }
     } else {
@@ -73,22 +74,8 @@ initNavigation(user => {
     }
 });
 
-let ADMIN = false;
-
 function showHome() {
     let root = new Component($("root"));
-
-    if (ADMIN) {
-        let buttonRow = new Component(root, { class: "row-container padded" });
-        let addPersona1 = new Button(buttonRow, {}, { text: "Create a random persona" });
-        let addPersona2 = new Button(buttonRow, {}, { text: "Guided persona" });
-        addPersona1.addListener('click', e => {
-            confirmCreateRandomPersona();
-        });
-        addPersona2.addListener('click', e => {
-            showGuidedPersonaInput();
-        });
-    }
 
     let controls = new Component(root, { class: "row-container padded" });
     new TextComponent(controls, {}, { text: "Name starts with:" })
@@ -174,13 +161,14 @@ function displayPersona(id) {
         });
         maxDay = new Date(maxDay);
         maxDay.setDate(maxDay.getDate() + 1);
-        let addDay = new Button(dayTabBar, { class: "add-button" }, { text: "Add Day " + (maxDay.getMonth() + 1) + "/" + maxDay.getDate() + "/" + + maxDay.getFullYear() });
+        let addDay = new Button(dayTabBar, { class: "add-button" }, { text: "Run simulation" });
         addDay.addListener('click', e => {
             addDay.visible(false);
-            createDayForPersona({ date: maxDay, id: id }).then(results => {
-                if (LOG1) console.log(results);
-                addDay.visible(true);
-            });
+            showSimulationProps(id);
+            // createDayForPersona({ date: maxDay, id: id }).then(results => {
+            //     if (LOG1) console.log(results);
+            //     addDay.visible(true);
+            // });
         });
 
     });
@@ -249,6 +237,54 @@ function showGuidedPersonaInput() {
 
 }
 
+
+function showSimulationProps(personaId) {
+    let root = new Takeover();
+
+    new TextComponent(root.body, { class: "medium-text" }, { text: "Add some details:" })
+    new TextComponent(root.body, { class: "padded" }, { text: "Title" });
+    let title = new Input(root.body);
+    new TextComponent(root.body, { class: "padded" }, { text: "Start Date" });
+    let startDate = new DateInput(root.body);
+    new TextComponent(root.body, { class: "padded" }, { text: "Number of Days" });
+    let numberOfDays = new Input(root.body);
+    new TextComponent(root.body, { class: "padded" }, { text: "Extra" });
+    let extra = new TextArea(root.body);
+
+    let c = new Component(root.body, { class: "row-container padded" });
+    let save = new Button(c, {}, { text: "Create" });
+    let cancel = new Button(c, {}, { text: "Cancel" });
+    save.addListener("click", e => {
+        save.enabled(false);
+        cancel.enabled(false);
+        let data = {
+            title: title.data,
+            startDate: startDate.data.toISOString().substring(0, 10),
+            numberOfDays: numberOfDays.data,
+            steering: extra.data ? extra.data : ""
+        };
+        if (personaId) {
+            data.personaId = personaId;
+            runSimulation(data).then(results => {
+                console.log(results)
+                location.href = "simulation.html?id=" + results.data.id;
+            });
+        } else {
+            runSimulationForAll(data).then(results => {
+                console.log(results)
+                location.href = "simulation.html?id=" + results.data.id;
+            });
+
+        }
+
+    });
+    cancel.addListener("click", e => {
+        root.el.remove();
+    });
+
+}
+
+
 class ImageBrowser extends Component {
     constructor(parent, data) {
         super(parent, { class: "row-container wrap" });
@@ -275,7 +311,7 @@ class ImageBrowser extends Component {
             } else {
                 t.visible(true);
                 t.body.clear();
-                new Button(t.body, {}, {text: "Close"}).click(e=>{ t.visible(false);})
+                new Button(t.body, {}, { text: "Close" }).click(e => { t.visible(false); })
                 new ImageTile2(t.body, data[idx]).click(e => { showImage(idx + 1) });
             }
         }
@@ -297,9 +333,30 @@ class ImageTile2 extends Component {
         super(parent, { class: "" });
         console.log(data.data)
         new TextComponent(this, { class: "medium-text" }, { text: data.data.date })
-        new TextComponent(this, { class: "" }, { text: data.data.dayPart});
+        new TextComponent(this, { class: "" }, { text: data.data.dayPart });
         new TextComponent(this, { class: "" }, { text: data.data.imagePrompt });
         new ImageComponent(this, { width: "900" }, { src: data.url });
 
     }
+}
+
+function displaySettings(user) {
+    let root = new Component($("root"));
+
+    let buttonRow = new Component(root, { class: "row-container padded" });
+    let addPersona1 = new Button(buttonRow, {}, { text: "Create a random persona" });
+    let addPersona2 = new Button(buttonRow, {}, { text: "Guided persona" });
+    addPersona1.addListener('click', e => {
+        confirmCreateRandomPersona();
+    });
+    addPersona2.addListener('click', e => {
+        showGuidedPersonaInput();
+    });
+
+    let notesRow = new Component(root, { class: "row-container padded" });
+    let addDays = new Button(notesRow, {}, { text: "Run simulation" });
+    addDays.addListener('click', e => {
+        showSimulationProps();
+    });
+
 }

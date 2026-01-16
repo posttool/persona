@@ -119,7 +119,7 @@ export class PersonaListUI extends Component {
                 document.location.href = "/persona.html?id=" + p.id;
             });
         });
-        new Button(this, { }, { text: "Next page" }).addListener("click", e => {
+        new Button(this, {}, { text: "Next page" }).addListener("click", e => {
             this.emit("next", lastId);
         });
     }
@@ -163,6 +163,10 @@ export class PersonComponent extends Component {
         new ImageComponent(this, { class: "rounded", width: "400" }, { src: data.image });
         new TextComponent(this, { class: "person" }, { text: data.occupation });
         new TextComponent(this, { class: "person" }, { text: data.city });
+        if (data.state) {
+            new TextComponent(this, { class: "person" }, { text: data.state + " " + data.postalCode });
+            new TextComponent(this, { class: "person" }, { text: data.country });
+        }
         new TextComponent(this, { class: "person", el: "h3" }, { text: "Apps & Services" });
         data.apps_and_services.forEach(a => {
             new TextComponent(this, { class: "small-text line-height-18" }, { text: a.app }); // + ": " + a.usage
@@ -353,6 +357,21 @@ export class RangeInput extends Component {
     }
 }
 
+export class DateInput extends Component {
+    constructor(parent, options, data) {
+        super(parent, { el: "input", ...options });
+        this.el.type = "date";
+        this.el.addEventListener('input', e => {
+            this._data = new Date(this.el.value);
+            this.emit('change', this._data);
+        });
+        this.data = data ? data : new Date();
+    }
+    draw() {
+        this.el.value = this._data;
+    }
+}
+
 export class Input extends Component {
     constructor(parent) {
         super(parent, { el: "input" });
@@ -434,7 +453,7 @@ class Suggestion extends Component {
     }
 }
 
-class TextArea extends Component {
+export class TextArea extends Component {
     constructor(parent) {
         super(parent, { class: "input" });
         this.input = $$({ parent: this.el, el: "textarea" });

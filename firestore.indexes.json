@@ -31,6 +31,38 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "service-queue",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "state",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "ux",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "personaId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "runName",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "data.date",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

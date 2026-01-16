@@ -8,7 +8,7 @@ Create a typical day for the following person:
 \${user}
 
 On the following date:
-\${date}
+\$(dayOfWeek} \${date} 
 
 A typical day should include unexpected diversions, for example
 a work or family member needing something or a train being delayed or
@@ -18,7 +18,7 @@ These are prior days. In creating the new day, build upon this history:
 \${otherDays}
 
 Create valid JSON output with the following template:
-{date: 'YYYY-MM-DD', events: [
+{date: 'YYYY-MM-DD', dayOfWeek: '', events: [
   {time: '05:45:13', description: 'wake up ... up to 30 words of description'},
   {time: '07:45:47', description: 'bus to school  ... up to 30 words of description'},
 ]}
@@ -185,9 +185,11 @@ Example output structure:
   name: "",
   age: 0,
   city: "",
+  state: "",
   country: "",
-  occupation: ""
-  economic_status: ""
+  postalCode: "",
+  occupation: "",
+  economic_status: "",
   hobbies: [
     "hobby 1",
     "hobby 2"
