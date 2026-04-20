@@ -43,7 +43,7 @@ export class DayTabsSmall extends Component {
 export class ObservationsView extends Component {
     constructor(parent, data) {
         super(parent, {});
-        let slider = new ObservationSlider(this, {}, { min: 0, max: 35, length: data.length });
+        let slider = new ObservationSlider(this, {}, { min: 0, max: 23, length: data.length });
         let filterTypes = new FilterOptions(this, data)
         let events = new ObservationEvents(this, data);
         function updateEvents(){
@@ -106,7 +106,7 @@ class ObservationSlider extends Component {
         this.min.el.addEventListener("mousedown", this._dragStart.bind(this, "min"))
         this.max.el.addEventListener("mousedown", this._dragStart.bind(this, "max"))
         this.btwn.el.addEventListener("mousedown", this._dragStartB.bind(this))
-        document.addEventListener("mouseup", this._dragStop.bind(this))
+        window.addEventListener("mouseup", this._dragStop.bind(this))
         this.data = data;
     }
     draw() {

@@ -1,9 +1,33 @@
+
+
 const { callLLM, processTemplate, sha256, getUrlBytes, getFileBytes } = require("./utils.js");
-const {
-    S42_ORGANIZE_AND_TRACK_MIRA,
-    S42_ORGANIZE_AND_TRACK_PDS
-} = require("./prompts/organize.js")
+const { S42_ORGANIZE_AND_TRACK_MIRA, S42_ORGANIZE_AND_TRACK_PDS, S60_LOOM } = require("./prompts/organize.js")
 const { BANAUX_P1, BANAUX_P2 } = require("./prompts/genux-banaux.js");
+
+
+
+/// html gen
+
+exports.testHTML = functions.https.onRequest({},
+    async (request, res) => {
+        // let prompt = processTemplate(S2_DAY, {
+        //     user: JSON.stringify(persona),
+        //     date: request.data.date.toString(),
+        //     otherDays: JSON.stringify(otherDays)
+        // });
+        let htmlresponse = await getGemini(GEMINI_API_KEY.value(), GENUX_P2, "gemini-2.5-pro");
+        console.log(htmlresponse);
+        return htmlresponse;
+    });
+
+exports.test1 = functions.https.onRequest({ secrets: [GEMINI_API_KEY] },
+    async (request, res) => {
+        let htmlresponse = await callLLM(GEMINI_API_KEY.value(), "tell me a joke? return valid json e.g. {joke: ''}");
+        console.log(htmlresponse);
+        res.set("Content-Type", "application/json");
+        res.status(200).send(htmlresponse);
+    });
+
 
 // create an image for an "app"
 function getAppFilePath(app) {
@@ -190,7 +214,7 @@ async function createUXForSpaces(GEMINI_API_KEY, spaces, uxPrompt, uxGuidelinesI
             },
         },
     ];
-    const buffer = await _generateImage(content);
+    const buffer = await _generateImage(GEMINI_API_KEY, content);
     const filepath = getImagePath("banaux-seed-1");
     const file = bucket.file(filepath);
     await file.save(buffer);

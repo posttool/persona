@@ -1,4 +1,5 @@
 import { $, $$ } from "./util.js";
+import { clientData } from "./firebasey.js";
 
 export class Component {
     constructor(parent = null, options = {}) {
@@ -115,9 +116,7 @@ export class PersonaListUI extends Component {
         let lastId = null;
         this._data.forEach(p => {
             lastId = p.name;
-            new PersonTile(this, p).click(e => {
-                document.location.href = "/persona.html?id=" + p.id;
-            });
+            new PersonTile(this, p)
         });
         new Button(this, {}, { text: "Next page" }).addListener("click", e => {
             this.emit("next", lastId);
@@ -125,11 +124,22 @@ export class PersonaListUI extends Component {
     }
 }
 
+
 class PersonTile extends Component {
     constructor(parent, data) {
         super(parent, {});
         new ImageComponent(this, { class: "rounded full-bleed", width: "100" }, { src: data.image });
         new TextComponent(this, { class: "width-150" }, { text: data.name });
+        if (clientData != null && clientData.isLoom) {
+            this.click(e=>{
+                location.href="/loom?id="+data.id;
+            });
+        } else {
+            this.click(e => {
+                document.location.href = "/persona.html?id=" + data.id;
+            });
+        }
+
     }
 }
 

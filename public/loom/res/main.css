@@ -10,23 +10,10 @@
   box-sizing: border-box;
 
   -webkit-font-smoothing: antialiased;
-  /* For WebKit browsers (Chrome, Safari) */
   -moz-osx-font-smoothing: grayscale;
-  /* For Firefox on macOS */
   font-smoothing: antialiased;
-  /* Standard property, but less widely supported */
 }
 
-
-
-#controls {
-  width: 580px;
-  position: fixed;
-  right: 20px;
-  top: 20px;
-  padding: 20px;
-
-}
 
 #network-status {
   width: 100px;
@@ -192,7 +179,7 @@ button {
 }
 
 .fixed-height {
-  max-height: 400px;
+  max-height: 300px;
   overflow: auto;
   margin: 10px 0 10px 30px;
 }

@@ -28,10 +28,10 @@ const miraConfig = {
 
 const pdsConfig = {
   ...rootConfig,
-  entry: './websrc/pds/main.js',
+  entry: './websrc/loom/main.js',
   output: {
     filename: '_main.js',
-    path: path.resolve(__dirname, 'public/pds/res'),
+    path: path.resolve(__dirname, 'public/loom/res'),
   },
 };
 

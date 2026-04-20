@@ -161,6 +161,30 @@ function getAllDemographics() {
     return shuffle(demographics);
 }
 
+function getAllDemographics(locations) {
+
+    let demographics = []
+    locations.forEach(location => {
+        ages.forEach(age => {
+            genders.forEach(gender => {
+                const extra = getPersonalities();
+                extra.forEach((x, i) => {
+                    if (i<2)
+                        demographics.push({location: location, age: age, gender: gender, extra: x});
+                })
+            })
+        })
+    })
+    return shuffle(demographics);
+}
+exports.getAllUSDemographics = function() {
+    return getAllUSDemographics(getUSStates());
+};
+
+exports.getAllJPDemographics = function() {
+    return getAllDemographics(getJPPrefectures());
+};
+
 exports.randomPersonaPrompt = function () {
     let p = getPersonaTemplate();
     return processTemplate(personaPrompt(p[0], p[1], p[2], p[3]));
@@ -173,7 +197,8 @@ function personaPrompt(location, age, gender, extra) {
     if (gender == null || gender == "") gender = p[2];
     if (extra == null || extra == "") extra = p[3];
     return `
-Given location age and gender, create a ${extra} persona.
+Given location age and gender, create a ${extra} persona. 
+Make sure the names are not always the most common ones for that location, to get more diversity.
 
 Input:
   location: ${location}
@@ -471,6 +496,252 @@ function getCountries() {
 
     array = []
     countries.forEach(function (e) {
+        array.push(e.name);
+    })
+    return shuffle(array)
+}
+
+function getJPPrefectures() {
+    return  [
+        "Hokkaido", "Aomori", "Iwate", "Miyagi", "Akita", "Yamagata", "Fukushima",
+        "Ibaraki", "Tochigi", "Gumma", "Saitama", "Chiba", "Tokyo", "Kanagawa",
+        "Niigata", "Toyama", "Ishikawa", "Fukui", "Yamanashi", "Nagano", "Gifu",
+        "Shizuoka", "Aichi", "Mie", "Shiga", "Kyoto", "Osaka", "Hyogo", "Nara",
+        "Wakayama", "Tottori", "Shimane", "Okayama", "Hiroshima", "Yamaguchi",
+        "Tokushima", "Kagawa", "Ehime", "Kochi", "Fukuoka", "Saga", "Nagasaki",
+        "Kumamoto", "Oita", "Miyazaki", "Kagoshima", "Okinawa"
+        ];
+}
+
+function getUSStates() {
+    const states = [
+        {
+            "name": "Alabama",
+            "abbreviation": "AL"
+        },
+        {
+            "name": "Alaska",
+            "abbreviation": "AK"
+        },
+        {
+            "name": "American Samoa",
+            "abbreviation": "AS"
+        },
+        {
+            "name": "Arizona",
+            "abbreviation": "AZ"
+        },
+        {
+            "name": "Arkansas",
+            "abbreviation": "AR"
+        },
+        {
+            "name": "California",
+            "abbreviation": "CA"
+        },
+        {
+            "name": "Colorado",
+            "abbreviation": "CO"
+        },
+        {
+            "name": "Connecticut",
+            "abbreviation": "CT"
+        },
+        {
+            "name": "District of Columbia",
+            "abbreviation": "DC"
+        },
+        {
+            "name": "Delaware",
+            "abbreviation": "DE"
+        },
+        {
+            "name": "Florida",
+            "abbreviation": "FL"
+        },
+        {
+            "name": "Georgia",
+            "abbreviation": "GA"
+        },
+        {
+            "name": "Guam",
+            "abbreviation": "GU"
+        },
+        {
+            "name": "Hawaii",
+            "abbreviation": "HI"
+        },
+        {
+            "name": "Idaho",
+            "abbreviation": "ID"
+        },
+        {
+            "name": "Illinois",
+            "abbreviation": "IL"
+        },
+        {
+            "name": "Indiana",
+            "abbreviation": "IN"
+        },
+        {
+            "name": "Iowa",
+            "abbreviation": "IA"
+        },
+        {
+            "name": "Kansas",
+            "abbreviation": "KS"
+        },
+        {
+            "name": "Kentucky",
+            "abbreviation": "KY"
+        },
+        {
+            "name": "Louisiana",
+            "abbreviation": "LA"
+        },
+        {
+            "name": "Maine",
+            "abbreviation": "ME"
+        },
+        {
+            "name": "Maryland",
+            "abbreviation": "MD"
+        },
+        {
+            "name": "Massachusetts",
+            "abbreviation": "MA"
+        },
+        {
+            "name": "Michigan",
+            "abbreviation": "MI"
+        },
+        {
+            "name": "Minnesota",
+            "abbreviation": "MN"
+        },
+        {
+            "name": "Mississippi",
+            "abbreviation": "MS"
+        },
+        {
+            "name": "Missouri",
+            "abbreviation": "MO"
+        },
+        {
+            "name": "Montana",
+            "abbreviation": "MT"
+        },
+        {
+            "name": "Nebraska",
+            "abbreviation": "NE"
+        },
+        {
+            "name": "Nevada",
+            "abbreviation": "NV"
+        },
+        {
+            "name": "New Hampshire",
+            "abbreviation": "NH"
+        },
+        {
+            "name": "New Jersey",
+            "abbreviation": "NJ"
+        },
+        {
+            "name": "New Mexico",
+            "abbreviation": "NM"
+        },
+        {
+            "name": "New York",
+            "abbreviation": "NY"
+        },
+        {
+            "name": "North Carolina",
+            "abbreviation": "NC"
+        },
+        {
+            "name": "North Dakota",
+            "abbreviation": "ND"
+        },
+        {
+            "name": "Northern Mariana Islands",
+            "abbreviation": "MP"
+        },
+        {
+            "name": "Ohio",
+            "abbreviation": "OH"
+        },
+        {
+            "name": "Oklahoma",
+            "abbreviation": "OK"
+        },
+        {
+            "name": "Oregon",
+            "abbreviation": "OR"
+        },
+        {
+            "name": "Pennsylvania",
+            "abbreviation": "PA"
+        },
+        {
+            "name": "Puerto Rico",
+            "abbreviation": "PR"
+        },
+        {
+            "name": "Rhode Island",
+            "abbreviation": "RI"
+        },
+        {
+            "name": "South Carolina",
+            "abbreviation": "SC"
+        },
+        {
+            "name": "South Dakota",
+            "abbreviation": "SD"
+        },
+        {
+            "name": "Tennessee",
+            "abbreviation": "TN"
+        },
+        {
+            "name": "Texas",
+            "abbreviation": "TX"
+        },
+        {
+            "name": "Utah",
+            "abbreviation": "UT"
+        },
+        {
+            "name": "Vermont",
+            "abbreviation": "VT"
+        },
+        {
+            "name": "Virgin Islands",
+            "abbreviation": "VI"
+        },
+        {
+            "name": "Virginia",
+            "abbreviation": "VA"
+        },
+        {
+            "name": "Washington",
+            "abbreviation": "WA"
+        },
+        {
+            "name": "West Virginia",
+            "abbreviation": "WV"
+        },
+        {
+            "name": "Wisconsin",
+            "abbreviation": "WI"
+        },
+        {
+            "name": "Wyoming",
+            "abbreviation": "WY"
+        }
+    ];
+    let array = []
+    states.forEach(function (e) {
         array.push(e.name);
     })
     return shuffle(array)

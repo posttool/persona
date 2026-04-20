@@ -1,15 +1,14 @@
 "use strict";
 
-import { initNavigation } from "../common/firebasey.js";
+import { initNavigation, clientData, signIn, signOutUser } from "../common/firebasey.js";
 import { $ } from "../common/util.js";
 import {
-    PersonaListUI, PersonComponent, TextComponent, Component, Button,
-    Select, Input, DateInput, TextArea, ImageComponent
-} from "../common/components.js";
+    Component, Button, Select, Input, DateInput, TextComponent, TextArea, ImageComponent,
+    PersonaListUI, PersonComponent } from "../common/components.js";
 import { DayTabs, ObservationsView } from "../common/observations.js";
 import {
     getPersona, listPersona, listDaysPersona, listObservations, createPersona,
-    createPersona2, runSimulation, runSimulationForAll, processQueue
+    createPersona2, createPersona3, createPersona4, runSimulation, runSimulationForAll, processQueue
 } from "../common/services.js"
 
 const LOG1 = false;
@@ -17,7 +16,45 @@ const LOG1 = false;
 console.log(window.location.pathname);
 const urlParams = new URLSearchParams(window.location.search);
 
+class ClientLogin extends Component {
+  constructor(parent, data) {
+    super(parent, { class: "client-login row-container" });
+    this.userPic = new ImageComponent(this, { class: "rounded-img" });
+    this.settingsButton = new Button(this, { class: "material-symbols-outlined" }, { text: "settings" });
+    this.settingsButton.visible(false);
+    this.signInButton = new Button(this, {}, { text: "Sign in" });
+    this.signInButton.visible(false);
+    this.signOutButton = new Button(this, {}, { text: "Sign out" });
+    this.signOutButton.visible(false);
+  }
+
+  draw() {
+    super.draw();
+    if (this.data) {
+      this.userPic.visible(false);
+      this.userPic.data = { src: this.data.photoURL };
+      this.settingsButton.visible(this.data.isAdmin);
+      this.signInButton.visible(false);
+      this.signOutButton.visible(true);
+    } else {
+      this.userPic.visible(false);
+      this.settingsButton.visible(false);
+      this.signInButton.visible(true);
+      this.signOutButton.visible(false);
+    }
+  }
+}
+
+const clientLogin = new ClientLogin($('navigation-login'));
+clientLogin.signInButton.addListener('click', signIn);
+clientLogin.signOutButton.addListener('click', signOutUser);
+clientLogin.settingsButton.addListener('click', e=>{
+  location.href = "/settings"
+});
+
+
 initNavigation(user => {
+    clientLogin.data = user;
     if (user) {
         $("root").innerText = "";
         switch (document.location.pathname) {
@@ -51,23 +88,6 @@ initNavigation(user => {
                     location.href = "/";
                 });
                 break;
-            // case '/pdf':
-            //     makePdf({ runName: "test" }).then(e => {
-            //         console.log(e);
-            //     });
-            //     break;
-            // case '/ux':
-            //     getPersonaWithUx({ runName: "test" }).then(e => {
-            //         console.log(e);
-            //         let personaList = new PersonaListUI($("root"));
-            //         let l = [];
-            //         for (const p in e.data) {
-            //             l.push(e.data[p]);
-            //         }
-            //         personaList.data = l;
-            //     });
-            //     break;
-
         }
     } else {
         $("root").innerText = "...";
@@ -132,6 +152,11 @@ function displayPersona(id) {
 
     getPersona({ id: id }).then(persona => {
         if (LOG1) console.log(persona)
+        if (clientData != null && clientData.isLoom) {
+            new Button(personaC, {}, {text:"Loom view"}).click(e=>{
+                location.href="/loom?id="+id;
+            });
+        }
         new PersonComponent(personaC, persona.data);
     });
     // listUx({ id: id, runName: "test" }).then(uxes => {
@@ -346,11 +371,23 @@ function displaySettings(user) {
     let buttonRow = new Component(root, { class: "row-container padded" });
     let addPersona1 = new Button(buttonRow, {}, { text: "Create a random persona" });
     let addPersona2 = new Button(buttonRow, {}, { text: "Guided persona" });
+    let addPersona3 = new Button(buttonRow, {}, { text: "Lots of US persona" });
+    let addPersona4 = new Button(buttonRow, {}, { text: "Lots of JP persona" });
     addPersona1.addListener('click', e => {
         confirmCreateRandomPersona();
     });
     addPersona2.addListener('click', e => {
         showGuidedPersonaInput();
+    });
+    addPersona3.addListener('click', e => {
+        createPersona3().then(results => {
+            location.href = "/";
+        });
+    });
+     addPersona4.addListener('click', e => {
+        createPersona4().then(results => {
+            location.href = "/";
+        });
     });
 
     let notesRow = new Component(root, { class: "row-container padded" });

@@ -21,6 +21,8 @@ if (window.location.hostname.includes("localhost")) {
 export const getMember = httpsCallable(functions, "getMember");
 export const createPersona = httpsCallable(functions, "createPersona");
 export const createPersona2 = httpsCallable(functions, "createPersona2");
+export const createPersona3 = httpsCallable(functions, "createPersona3");
+export const createPersona4 = httpsCallable(functions, "createPersona4");
 export const listPersona = httpsCallable(functions, "listPersona");
 export const getPersona = httpsCallable(functions, "getPersona");
 export const createDayForPersona = httpsCallable(functions, "createDayForPersona");
@@ -31,12 +33,7 @@ export const processQueue = httpsCallable(functions, "processQueue");
 export const runSimulation = httpsCallable(functions, "runSimulation");
 export const runSimulationForAll = httpsCallable(functions, "runSimulationForAll");
 
-export const makeSpaceMira = httpsCallable(functions, "makeSpaceMira");
-export const makeSpacePds = httpsCallable(functions, "makeSpacePds");
 export const createAppImg = httpsCallable(functions, "createAppImg");
 export const createEditorialImg = httpsCallable(functions, "createEditorialImg");
-export const createBGForPersona = httpsCallable(functions, "createBGForPersona");
-export const makeSpaceBanaux = httpsCallable(functions, "makeSpaceBanaux");
-export const listUx = httpsCallable(functions, "listUx");
-export const getPersonaWithUx = httpsCallable(functions, "getPersonaWithUx");
-export const makePdf = httpsCallable(functions, "makePdf");
+export const makeSpaceLoom = httpsCallable(functions, "makeSpaceLoom");
+export const critiqueSpace = httpsCallable(functions, "critiqueSpace");

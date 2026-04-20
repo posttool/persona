@@ -1,0 +1,117 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #1a2332;
+  color: #ffffff;
+}
+
+.page {
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+.header h1 {
+  margin: 0 0 0.25rem;
+  color: #ffffff;
+}
+
+.header p {
+  margin: 0 0 1.25rem;
+  color: #cbd5e1;
+}
+
+/* --- Bento grid --- */
+.bento {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-rows: 90px;
+  grid-auto-flow: dense;
+}
+
+/* Base tile */
+.tile {
+  padding: 1rem;
+  border-radius: 1rem;
+  background: #333; 
+  color: #ffffff;
+
+  grid-column: span 3;
+  grid-row: span 1;
+}
+
+.tile h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  /* color: #ffffff; */
+}
+
+.tile p {
+  margin: 0;
+  /* color: rgba(255, 255, 255, 0.9); */
+  line-height: 1.4;
+}
+
+/* --- Tile utilities (desktop) --- */
+.tile-6x2 {
+  grid-column: span 6;
+  grid-row: span 2;
+  /* background: #ec4899; */
+}
+
+.tile-6x1 {
+  grid-column: span 6;
+  grid-row: span 1;
+  /* background: #f97316; */
+}
+
+.tile-3x2 {
+  grid-column: span 3;
+  grid-row: span 2;
+  /* background: #10b981; */
+}
+
+.tile-9x1 {
+  grid-column: span 9;
+  grid-row: span 1;
+  /* background: #eab308; */
+}
+
+/* --- Tablet --- */
+@media (max-width: 900px) {
+  .bento {
+    grid-auto-rows: 85px;
+  }
+
+  /* Default  */
+  .tile {
+    grid-column: span 6;
+    grid-row: span 2;
+  }
+
+  .tile-6x2,
+  .tile-6x1,
+  .tile-9x1 {
+    grid-column: span 12;
+  }
+
+  .tile-3x2 {
+    grid-column: span 6;
+  }
+}
+
+/* --- Mobile --- */
+@media (max-width: 560px) {
+  .bento {
+    grid-auto-rows: 80px;
+  }
+
+  .tile {
+    grid-column: span 12 !important;
+    grid-row: span 1 !important;
+  }
+}

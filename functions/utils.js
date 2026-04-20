@@ -120,12 +120,17 @@ const NodeCache = require( "node-cache" );
 
 // Genai functions
 const { GoogleGenAI, Modality, createUserContent, createPartFromUri } = require("@google/genai");
+const MODEL1 = "gemini-3.1-flash-lite-preview";
+const MODEL2 = "gemini-3-pro-preview";
 
-async function getGemini(key, prompt, model="gemini-2.5-flash") {
+async function getGemini(key, prompt, temp=0.2, model=MODEL1) {
     const googleGenAI = new GoogleGenAI({ apiKey: key });
     const response = await googleGenAI.models.generateContent({
-        model:  model,//gemini-3-pro-preview
+        model:  model,
         contents: prompt,
+        config: {
+        temperature: temp, 
+      },
     });
     return response.candidates[0].content.parts[0].text;
 }
@@ -135,7 +140,7 @@ const llmOfChoice = getGemini;
 // const llmCache = new NodeCache();
 
 // todo pass llmOfChoice as an arg
-async function callLLM(key, prompt, c = 0) {
+async function callLLM(key, prompt, temp = 1, c = 0) {
     if (c < 4) {
         if (c > 0) {
             console.log("RETRY " + c);
@@ -144,14 +149,14 @@ async function callLLM(key, prompt, c = 0) {
         // if (r != undefined) 
         //     return r;
         try {
-            let r = await llmOfChoice(key, prompt);
+            let r = await llmOfChoice(key, prompt, temp = temp);
             let json = parseJSON(r);
             // llmCache.set(prompt, json);
             return json;
         } catch (e) {
             console.log(e);
             await wait(1500);
-            return callLLM(key, prompt, c + 1);
+            return callLLM(key, prompt, temp = temp, c = c + 1);
         }
     } else {
         throw new Error("too many retries");
@@ -162,16 +167,20 @@ exports.callLLM = callLLM;
 
 // image gen
 
+const IMAGE_MODEL = "gemini-2.5-flash-image"
+// const IMAGE_MODEL = "gemini-3-pro-image-preview"
+// const IMAGE_MODEL = "gemini-3.1-flash-image-preview"
 
 async function ___igquery(key, contents) {
     const AI = new GoogleGenAI({ apiKey: key });
     const response = await AI.models.generateContent({
-        model: "gemini-3-pro-image-preview", // "gemini-2.5-flash-image"
+        model: IMAGE_MODEL,
         contents: contents,
         config: {
             responseModalities: [Modality.TEXT, Modality.IMAGE],
         },
     });
+    console.log(response)
     for (const part of response.candidates[0].content.parts) {
         if (part.text) {
             console.log(part.text);

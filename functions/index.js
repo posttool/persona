@@ -3,8 +3,8 @@ if (process.env.FUNCTIONS_EMULATOR === "true") {
 }
 
 const functions = require("firebase-functions");
-const {onSchedule} = require("firebase-functions/scheduler");
 const admin = require("firebase-admin");
+const {onSchedule} = require("firebase-functions/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 const { getDownloadURL } = require("firebase-admin/storage");
 const { Firestore } = require("@google-cloud/firestore");
@@ -13,21 +13,20 @@ const db = admin.firestore();
 const bucket = admin.storage().bucket();
 
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
-const { GoogleGenAI, Modality, createUserContent, createPartFromUri } = require("@google/genai");
-const { callLLM, processTemplate, wait, generateImage } = require("./utils.js");
+const { callLLM, processTemplate, sha256, generateImage } = require("./utils.js");
 
-const path = require('path');
-const { argv, cwd } = require('process');
+// const path = require('path');
+// const { argv, cwd } = require('process');
 
 const {
     randomPersonaPrompt,
     personaPrompt,
     personaImagePrompt,
+    getAllUSDemographics,
+    getAllJPDemographics,
     S2_DAY,
-    S3_AMBIENT_OBSERVATIONS
-} = require("./prompts/persona.js");
-
-const { GENUX_P2 } = require("./prompts/genux-yield.js");
+    S3_AMBIENT_OBSERVATIONS } = require("./prompts/persona.js");
+const { S60_LOOM, S60_LOOM_SPACE_CRITIQUE } = require("./prompts/organize.js");
 
 // user managerment
 
@@ -77,6 +76,22 @@ exports.createPersona2 = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
         return personaData;
     });
 
+exports.createPersona3 = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
+    async (request, context) => {
+        let usDemo = getAllUSDemographics();
+        for (let i = 0; i < usDemo.length; i++) {
+            await _queue(GENERATE_PERSONA_TASK, usDemo[i]);
+        }
+    });
+
+exports.createPersona4 = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
+    async (request, context) => {
+        let jpDemo = getAllJPDemographics();
+        for (let i = 0; i < jpDemo.length; i++) {
+            await _queue(GENERATE_PERSONA_TASK, jpDemo[i]);
+        }
+    });
+
 function _getPDoc(id) {
     return db.collection("persona").doc(id);
 }
@@ -111,8 +126,11 @@ function _sanitizePersona(doc) {
         city: data.city,
         age: data.age,
         image: data.image,
+        hobbies: data.hobbies,
+        goals_this_week: data.goals_this_week,
+        family: data.family,
+        apps: data.apps_and_services
         // imageBG: data.imageBG,
-        // apps: data.apps_and_services
     };
 }
 
@@ -122,7 +140,7 @@ exports.listPersona = functions.https.onCall({},
         let query = db.collection("persona")
             .orderBy("name")
             .startAt(request.data && request.data.startAt ? request.data.startAt : "A")
-            .limit(request.data && request.data.limit ? Number(request.data.limit) : 20);
+            .limit(request.data && request.data.limit ? Number(request.data.limit) : 50);
         let querySnapshot = await query.get();
         querySnapshot.forEach((doc) => {
             personaResponse.push(_sanitizePersona(doc));
@@ -184,37 +202,34 @@ exports.listDaysForPersona1 = functions.https.onRequest({ cors: true },
         res.status(200).send(JSON.stringify(response));
     });
 
-exports.listObservations = functions.https.onCall({},
-    async (request, context) => {
-        let response = [];
-        let querySnapshot = await db.collection("observations")
-            .where("personaId", "==", request.data.id)
-            .where("date", "==", request.data.date)
-            .orderBy("time")
-            .get();
-        querySnapshot.forEach((doc) => {
+async function _getObservations(personaId, date, start=-1, end=-1) {
+    let response = [];
+    let querySnapshot = await db.collection("observations")
+        .where("personaId", "==", personaId)
+        .where("date", "==", date)
+        .orderBy("time")
+        .get();
+    let c = 0;
+    querySnapshot.forEach(doc => {
+        if ((start == -1 || c >= start) && (end == -1 || c < end)) {
             let d = doc.data();
             d.id = doc.id;
             delete d.personaId;
             response.push(d);
-        });
-        return response;
+        }
+        c++;
+    });
+    return response;
+}
+
+exports.listObservations = functions.https.onCall({},
+    async (request, context) => {
+        return _getObservations(request.data.id, request.data.date);
     });
 
 exports.listObservations1 = functions.https.onRequest({ cors: true },
     async (request, res) => {
-        let response = [];
-        let querySnapshot = await db.collection("observations")
-            .where("personaId", "==", request.query.id)
-            .where("date", "==", request.query.date)
-            .orderBy("time")
-            .get();
-        querySnapshot.forEach((doc) => {
-            let d = doc.data();
-            d.id = doc.id;
-            delete d.personaId;
-            response.push(d);
-        });
+        let response = _getObservations(request.query.id, request.query.date);
         res.set("Content-Type", "application/json");
         res.status(200).send(JSON.stringify(response));
     });
@@ -246,6 +261,7 @@ function getImagePath(bp) {
 
 
 /// simulation runs
+const GENERATE_PERSONA_TASK = "generate-persona";
 const GENERATE_DAY_TASK = "generate-day"; // (persona id, dayNumber, date, steering)
 const GENERATE_OBSERVATION_TASK = "generate-observation"; // (id, date, index)
 
@@ -290,6 +306,7 @@ async function _queue(fname, data) {
         state: 'init',
         created: Firestore.FieldValue.serverTimestamp()
     };
+    console.log(doc)
     return await db.collection('service-queue').add(doc);
 }
 
@@ -331,10 +348,8 @@ async function _processQItem(ref, data) {
 async function _processRequest(r) {
     console.log(' ** process request ' + r.fname);
     switch (r.fname) {
-        // case 'generate-screen':
-        //     return await generateScreen(r.data);
-        // case 'generate-observations':
-        //     return await addResponse(r.data.agent, r.data.intro);
+        case GENERATE_PERSONA_TASK:
+            return await _generatePersonaTask(r.data);
         case GENERATE_DAY_TASK:
             return await _generateDayTask(r.data);
         case GENERATE_OBSERVATION_TASK:
@@ -354,8 +369,8 @@ async function initSim(data) {
     // days: [] generated
     let simRun = await db.collection("simulation-run").add(data);
     let dates = [];
+    let dt = new Date(data.startDate);
     for (let i = 0; i < data.numberOfDays; i++) {
-        let dt = new Date(data.startDate);
         dt.setDate(dt.getDate() + i);
         dates.push(dt.toISOString().substring(0, 10));
     }
@@ -367,6 +382,26 @@ async function initSim(data) {
     });
     return simRun.id;
 }
+
+async function _generatePersonaTask(data) {
+    let p = personaPrompt(data.location, data.age, data.gender, data.extra);
+    let personaData = await callLLM(GEMINI_API_KEY.value(), p);
+    let newPersona = await db.collection("persona").add(personaData);
+    await createImageForAgent(newPersona.id);
+    let dates = [];
+    let dt = new Date(); // TODO parameterize this
+    for (let i = 0; i < 3; i++) {
+        dt.setDate(dt.getDate() + i);
+        dates.push(dt.toISOString().substring(0, 10));
+    }
+    await _queue(GENERATE_DAY_TASK, {
+        simRunId: newPersona.id,
+        personaId: newPersona.id,
+        dates: dates,
+        steering: ""
+    });
+}
+
 
 const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -436,24 +471,57 @@ async function _generateObservationsTask(data) {
 
 }
 
-/// html gen
+/* SPACE SERVICES */
 
-exports.testHTML = functions.https.onRequest({},
-    async (request, res) => {
-        // let prompt = processTemplate(S2_DAY, {
-        //     user: JSON.stringify(persona),
-        //     date: request.data.date.toString(),
-        //     otherDays: JSON.stringify(otherDays)
-        // });
-        let htmlresponse = await getGemini(GEMINI_API_KEY.value(), GENUX_P2, "gemini-2.5-pro");
-        console.log(htmlresponse);
-        return htmlresponse;
+exports.makeSpaceLoom = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
+    async (request, context) => {
+        let persona = await _getPersona(request.data.id);
+        let sd = await _getObservations(request.data.id, request.data.date, request.data.start, request.data.end);
+        // console.log(persona.name);
+        // console.log(request.data.date+" "+request.data.start+" "+request.data.end)
+        console.log(request.data.priorSpace)
+
+        let prompt = processTemplate(S60_LOOM, {
+            user: persona.name,
+            observations: JSON.stringify(sd),
+            date: request.data.date,
+            space: JSON.stringify(request.data.priorSpace.cards),
+            memory: JSON.stringify(request.data.priorSpace.memory)
+        });
+        let spaces = await callLLM(GEMINI_API_KEY.value(), prompt, temp=0.1);
+        return spaces;
     });
 
-exports.test1 = functions.https.onRequest({ secrets: [GEMINI_API_KEY] },
-    async (request, res) => {
-        let htmlresponse = await callLLM(GEMINI_API_KEY.value(), "tell me a joke? return valid json e.g. {joke: ''}");
-        console.log(htmlresponse);
-        res.set("Content-Type", "application/json");
-        res.status(200).send(htmlresponse);
+exports.critiqueSpace = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
+    async (request, context) => {
+        let persona = await _getPersona(request.data.id);
+        let sd = await _getObservations(request.data.id, request.data.date, request.data.start, request.data.end);
+        let prompt = processTemplate(S60_LOOM_SPACE_CRITIQUE, {
+            persona: JSON.stringify(persona),
+            observations: JSON.stringify(sd),
+            date: request.data.date,
+            space: JSON.stringify(request.data.priorSpace.cards),
+            memory: JSON.stringify(request.data.priorSpace.memory)
+        });
+        let critique = await callLLM(GEMINI_API_KEY.value(), prompt, temp=1.3);
+        return critique;
     });
+
+
+exports.createEditorialImg = functions.https.onCall({ secrets: [GEMINI_API_KEY] },
+    async (request, res) => {
+        let prompt = String(request.data.prompt);
+        let filepath = "/editorial-2/" + sha256(prompt) + ".jpg";
+        console.log(filepath);
+        const file = bucket.file(filepath);
+        const exists = await file.exists();
+        if (!exists[0]) {
+            // let content = "Make a very simple graphic illustration in the style of Sebastian Curi for: " + prompt + ". ";
+            // console.log(content)
+            const buffer = await generateImage(GEMINI_API_KEY.value(), prompt);
+            await file.save(buffer);
+        }
+        const downloadURL = await getDownloadURL(file);
+        return { url: downloadURL };
+    }
+);
