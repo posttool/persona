@@ -25,6 +25,7 @@ const {
     getAllUSDemographics,
     getAllJPDemographics,
     S2_DAY,
+    S4_LIFE_EVENT,
     S3_AMBIENT_OBSERVATIONS } = require("./prompts/persona.js");
 const { S60_LOOM, S60_LOOM_SPACE_CRITIQUE } = require("./prompts/organize.js");
 
@@ -285,7 +286,48 @@ exports.runSimulationForAll = functions.https.onCall({ cors: true, secrets: [GEM
         return 1;
     });
 
-exports.scheduledFunction = onSchedule({ schedule: '* * * * *', secrets: [GEMINI_API_KEY] },  
+exports.triggerLifeEvent = functions.https.onCall({ cors: true, secrets: [GEMINI_API_KEY] },
+    async (data, context) => {
+        let id = data.id;
+        let event = data.event;
+        let persona = await _getPersona(id);
+
+        let prompt = processTemplate(S4_LIFE_EVENT, {
+            user: JSON.stringify(persona),
+            event: event
+        });
+        let updatedPersona = await callLLM(GEMINI_API_KEY.value(), prompt);
+        // callLLM already returns the JSON object if successful
+        await _getPDoc(id).update(updatedPersona);
+        persona = await _getPersona(id); // reload
+
+        // find next date
+        let querySnapshot = await db.collection("day")
+            .where("personaId", "==", id)
+            .orderBy("date", "desc")
+            .limit(1)
+            .get();
+
+        let nextDate = new Date().toISOString().substring(0, 10);
+        if (!querySnapshot.empty) {
+            let lastDate = new Date(querySnapshot.docs[0].data().date);
+            lastDate.setDate(lastDate.getDate() + 1);
+            nextDate = lastDate.toISOString().substring(0, 10);
+        }
+
+        let simId = await initSim({
+            personaId: id,
+            title: event,
+            startDate: nextDate,
+            numberOfDays: 1,
+            steering: "The user's day is significantly impacted by this event: " + event
+        });
+
+        _processQ();
+        return { simId: simId, persona: persona };
+    });
+
+exports.scheduledFunction = onSchedule({ schedule: '* * * * *', secrets: [GEMINI_API_KEY] },
     (event) => {
         console.log(event);
         console.log('On the minute * * * * * !');
@@ -421,10 +463,16 @@ async function _generateDayTask(data) {
         let dt = new Date(today);
         let dayOfWeek = daysOfWeek[dt.getDay()];
         console.log(today+" "+dayOfWeek+" "+otherDays.length);
+        let steering = data.steering;
+        if (!steering || steering == "") {
+            steering = "A typical day should include unexpected diversions, for example a work or family member needing something or a train being delayed or a package delivered to the wrong address. Nothing drastic, realistic.";
+        }
+
         let prompt = processTemplate(S2_DAY, {
             user: JSON.stringify(persona),
             date: today,
             dayOfWeek: dayOfWeek,
+            steering: steering,
             otherDays: JSON.stringify(otherDays)
         });
         let dayData = await callLLM(GEMINI_API_KEY.value(), prompt);
