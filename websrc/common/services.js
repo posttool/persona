@@ -32,6 +32,7 @@ export const listObservations = httpsCallable(functions, "listObservations");
 export const processQueue = httpsCallable(functions, "processQueue");
 export const runSimulation = httpsCallable(functions, "runSimulation");
 export const runSimulationForAll = httpsCallable(functions, "runSimulationForAll");
+export const triggerLifeEvent = httpsCallable(functions, "triggerLifeEvent");
 
 export const createAppImg = httpsCallable(functions, "createAppImg");
 export const createEditorialImg = httpsCallable(functions, "createEditorialImg");

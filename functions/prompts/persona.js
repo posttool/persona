@@ -4,15 +4,13 @@ const { shuffle, processTemplate } = require("../utils.js");
 /** making a days */
 
 exports.S2_DAY = `
-Create a typical day for the following person:
+Create a day for the following person:
 \${user}
 
 On the following date:
-\$(dayOfWeek} \${date} 
+\${dayOfWeek} \${date}
 
-A typical day should include unexpected diversions, for example
-a work or family member needing something or a train being delayed or
-a package delivered to the wrong address. Nothing drastic, realistic.
+\${steering}
 
 These are prior days. In creating the new day, build upon this history:
 \${otherDays}
@@ -25,6 +23,21 @@ Create valid JSON output with the following template:
 Only produce JSON with no extra writing.
 `
 
+exports.S4_LIFE_EVENT = `
+You are an expert at persona development. Update the following persona based on a major life event.
+
+Persona:
+\${user}
+
+Life Event:
+\${event}
+
+Update the persona's details (like city, state, goals, etc.) if they would realistically change because of this event.
+For example, if they "move across country", update their city, state, and maybe some goals or hobbies.
+If the event is minor like "spilled coffee", the persona itself probably won't change, so return it as is.
+
+Return the updated persona as valid JSON.
+`
 
 
 exports.S3_AMBIENT_OBSERVATIONS = `

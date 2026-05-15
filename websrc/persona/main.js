@@ -8,7 +8,8 @@ import {
 import { DayTabs, ObservationsView } from "../common/observations.js";
 import {
     getPersona, listPersona, listDaysPersona, listObservations, createPersona,
-    createPersona2, createPersona3, createPersona4, runSimulation, runSimulationForAll, processQueue
+    createPersona2, createPersona3, createPersona4, runSimulation, runSimulationForAll, processQueue,
+    triggerLifeEvent
 } from "../common/services.js"
 
 const LOG1 = false;
@@ -197,6 +198,34 @@ function displayPersona(id) {
         });
 
     });
+
+    let lifeEventsC = new Component(personaC);
+    new TextComponent(lifeEventsC, { el: "h3" }, { text: "Life Events" });
+    let lifeEventsButtons = new Component(lifeEventsC, { class: "row-container wrap" });
+
+    let events = ["spill coffee", "lose wallet", "miss flight", "move across country"];
+    events.forEach(event => {
+        let b = new Button(lifeEventsButtons, { class: "small-button" }, { text: event });
+        b.click(e => {
+            b.enabled(false);
+            triggerLifeEvent({ id: id, event: event }).then(r => {
+                console.log(r);
+                location.reload();
+            });
+        });
+    });
+    let customB = new Button(lifeEventsButtons, { class: "small-button" }, { text: "custom" });
+    customB.click(e => {
+        let event = prompt("Enter a life event:");
+        if (event) {
+            customB.enabled(false);
+            triggerLifeEvent({ id: id, event: event }).then(r => {
+                console.log(r);
+                location.reload();
+            });
+        }
+    });
+
 }
 
 
